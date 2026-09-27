@@ -185,5 +185,7 @@ function launchActivity(activityId) {
         openRobotsModule(act);
     } else if (act.type === 'fast') {
         openFastModule(act);
+    } else if (act.type === 'diagramme_fonctionnel') {
+        openDiagrammeFonctionnelModule(act);
     }
 }

@@ -206,6 +206,16 @@ const ACTIVITIES_DATABASE = [
         description: "Mais comment ça marche ? Découverte du robot programmable mBot à travers 6 capsules vidéo.",
         defaultUnlocked: false
     },
+    {
+        id: "4_diagramme_fonctionnel",
+        niveau: "4eme",
+        titre: "Le Diagramme Fonctionnel",
+        type: "diagramme_fonctionnel",
+        badgeText: "Module",
+        badgeClass: "badge-quiz",
+        description: "Méthode FAST — cours interactif, exercices et corrections détaillées.",
+        defaultUnlocked: false
+    },
 
     // --- 3ème ---
     {

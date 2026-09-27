@@ -19,6 +19,7 @@ const requiredFiles = [
     'js/analyse.js',
     'js/capteurs_actionneurs.js',
     'js/systemes_automatiques.js',
+    'js/diagramme_fonctionnel.js',
     'js/objets_materiaux.js',
     'js/eval_competences.js',
     'js/fiches.js'

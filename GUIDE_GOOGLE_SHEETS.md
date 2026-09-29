@@ -40,10 +40,57 @@ Pour recevoir les notes saisies par les élèves et enseignants directement dans
 2. Remplacez le code par le script suivant :
 
 ```javascript
+function doGet(e) {
+  try {
+    var props = PropertiesService.getScriptProperties();
+    var action = e && e.parameter ? e.parameter.action : "";
+
+    if (action === "getUnlocks") {
+      var rawUnlocks = props.getProperty("site_techno_unlocks") || "{}";
+      var unlocks = JSON.parse(rawUnlocks);
+      return ContentService.createTextOutput(JSON.stringify({
+        "status": "success",
+        "unlocks": unlocks
+      })).setMimeType(ContentService.MimeType.JSON);
+    }
+
+    return ContentService.createTextOutput(JSON.stringify({"status": "ok"}))
+      .setMimeType(ContentService.MimeType.JSON);
+  } catch (err) {
+    return ContentService.createTextOutput(JSON.stringify({
+      "status": "error",
+      "error": err.toString()
+    })).setMimeType(ContentService.MimeType.JSON);
+  }
+}
+
 function doPost(e) {
   try {
     var sheet = SpreadsheetApp.getActiveSpreadsheet().getActiveSheet();
     var data = JSON.parse(e.postData.contents);
+
+    // Prise en charge de la synchronisation des déverrouillages d'activités
+    if (data.type === "UNLOCK_UPDATE") {
+      var props = PropertiesService.getScriptProperties();
+      var rawUnlocks = props.getProperty("site_techno_unlocks") || "{}";
+      var unlocksMap = JSON.parse(rawUnlocks);
+
+      if (data.unlocks && typeof data.unlocks === "object") {
+        for (var k in data.unlocks) {
+          unlocksMap[k] = data.unlocks[k];
+        }
+      } else if (data.key) {
+        unlocksMap[data.key] = Boolean(data.isUnlocked);
+      }
+
+      props.setProperty("site_techno_unlocks", JSON.stringify(unlocksMap));
+
+      return ContentService.createTextOutput(JSON.stringify({
+        "status": "success",
+        "message": "Déverrouillages mis à jour",
+        "unlocks": unlocksMap
+      })).setMimeType(ContentService.MimeType.JSON);
+    }
 
     sheet.appendRow([
       new Date(),

@@ -118,9 +118,13 @@ function getLocalUnlocks() {
     }
 }
 
-function renderUnlockManagement() {
+async function renderUnlockManagement() {
     const container = document.getElementById('profUnlockContent');
     if (!container) return;
+
+    if (typeof fetchRemoteUnlocks === 'function') {
+        await fetchRemoteUnlocks();
+    }
 
     const niveau = document.getElementById('profSuiviNiveau') ? document.getElementById('profSuiviNiveau').value : '4eme';
     const currentSelect = document.getElementById('unlockClasseSelect');
@@ -129,15 +133,26 @@ function renderUnlockManagement() {
     const localUnlocks = getLocalUnlocks();
     const activities = ACTIVITIES_DATABASE.filter(a => a.niveau === niveau);
 
-    const prefix = niveau === '5eme' ? '50' : (niveau === '4eme' ? '40' : '30');
-    let classOptionsHTML = `<option value="ALL" ${selectedClasse === 'ALL' ? 'selected' : ''}>Toutes les classes (${niveau})</option>`;
-    for (let i = 1; i <= 8; i++) {
-        const cls = `${prefix}${i}`;
-        classOptionsHTML += `<option value="${cls}" ${selectedClasse === cls ? 'selected' : ''}>Classe ${cls}</option>`;
+    // Extraction dynamique des classes réelles depuis l'annuaire des élèves
+    let availableClasses = [];
+    if (typeof annuaireEleves !== 'undefined' && Array.isArray(annuaireEleves) && annuaireEleves.length > 0) {
+        availableClasses = [...new Set(annuaireEleves.filter(e => e.niveau === niveau).map(e => e.classe))].sort();
+    }
+    if (availableClasses.length === 0) {
+        const prefix = niveau === '5eme' ? '50' : (niveau === '4eme' ? '40' : '30');
+        for (let i = 1; i <= 8; i++) {
+            availableClasses.push(`${prefix}${i}`);
+        }
     }
 
+    const levelLabelHeader = niveau === '5eme' ? '5ème' : (niveau === '4eme' ? '4ème' : '3ème');
+    let classOptionsHTML = `<option value="ALL" ${selectedClasse === 'ALL' ? 'selected' : ''}>Toutes les classes (${levelLabelHeader})</option>`;
+    availableClasses.forEach(cls => {
+        classOptionsHTML += `<option value="${cls}" ${selectedClasse === cls ? 'selected' : ''}>Classe ${cls}</option>`;
+    });
+
     let html = `
-        <div style="margin-bottom:12px; display:flex; gap:10px; align-items:center;">
+        <div style="margin-bottom:12px; display:flex; gap:10px; align-items:center; flex-wrap:wrap;">
             <label style="font-weight:600;">Classe ciblée :</label>
             <select id="unlockClasseSelect" onchange="renderUnlockManagement()" style="padding:6px 12px; border-radius:6px;">
                 ${classOptionsHTML}
@@ -180,18 +195,42 @@ function renderUnlockManagement() {
     container.innerHTML = html;
 }
 
-function toggleActivityUnlockLocal(activityCode, isChecked) {
+async function toggleActivityUnlockLocal(activityCode, isChecked) {
     const targetClasse = document.getElementById('unlockClasseSelect') ? document.getElementById('unlockClasseSelect').value : 'ALL';
     const localUnlocks = getLocalUnlocks();
     const key = `${activityCode}_${targetClasse}`;
     localUnlocks[key] = isChecked;
+
     if (targetClasse === 'ALL') {
         localUnlocks[activityCode] = isChecked;
+        localUnlocks[`${activityCode}_ALL`] = isChecked;
+
+        // Harmonisation pour toutes les sous-clés de cette activité
+        Object.keys(localUnlocks).forEach(k => {
+            if (k.startsWith(`${activityCode}_`)) {
+                localUnlocks[k] = isChecked;
+            }
+        });
     }
+
     localStorage.setItem(CONFIG.STORAGE_KEY_UNLOCKS, JSON.stringify(localUnlocks));
 
     if (typeof refreshCurrentDashboard === 'function') {
         refreshCurrentDashboard();
+    }
+
+    // Synchronisation vers Google Apps Script
+    if (CONFIG.GOOGLE_APPS_SCRIPT_URL && CONFIG.GOOGLE_APPS_SCRIPT_URL.trim() !== '') {
+        const payload = {
+            type: 'UNLOCK_UPDATE',
+            action: 'setUnlock',
+            activityCode: activityCode,
+            targetClasse: targetClasse,
+            isUnlocked: isChecked,
+            key: key,
+            unlocks: localUnlocks
+        };
+        await sendDataToGoogleAppsScript(payload);
     }
 }
 

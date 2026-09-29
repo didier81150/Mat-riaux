@@ -253,7 +253,7 @@ async function toggleActivityUnlockLocal(activityCode, isChecked) {
             key: key,
             unlocks: localUnlocks
         };
-        await sendDataToGoogleAppsScript(payload);
+        await sendDataToGoogleAppsScript(payload, CONFIG.GOOGLE_APPS_SCRIPT_URL);
     }
 }
 

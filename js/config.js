@@ -27,6 +27,7 @@ const CONFIG = {
     GOOGLE_APPS_SCRIPT_URL: "https://script.google.com/macros/s/AKfycby9IW4WDgIY-rJTAYwl6JC2Ee0XDzUMfaVDXbyCTR4YgOCrJb0YgdOgnDjGugpZ6EqY/exec",
     EVAL_3EME_WEB_APP_URL: "https://script.google.com/macros/s/AKfycbzb7kMOK4q8RaxMMRBi7gb6ni0no5cx75cxPKulaufgEdxi3RcWSbnz5xJCKQIXcNCSAw/exec",
     SYSTEMES_AUTOMATIQUES_WEB_APP_URL: "https://script.google.com/macros/s/AKfycby9IW4WDgIY-rJTAYwl6JC2Ee0XDzUMfaVDXbyCTR4YgOCrJb0YgdOgnDjGugpZ6EqY/exec",
+    ROBOTS_WEB_APP_URL: "https://script.google.com/macros/s/AKfycby9IW4WDgIY-rJTAYwl6JC2Ee0XDzUMfaVDXbyCTR4YgOCrJb0YgdOgnDjGugpZ6EqY/exec",
 
     // 4. URL du CSV Google Sheets pour la consultation des Notes de Stage
     GOOGLE_SHEET_STAGE_NOTES_CSV: "https://docs.google.com/spreadsheets/d/1hVYXc11P_UCaindsid74sjz_m68ElHRLvETqhNtzV4c/export?format=csv",
@@ -51,7 +52,7 @@ const FICHES_CATEGORIES = [
 
 // Helper global d'envoi de données vers Google Apps Script Web App
 async function sendDataToGoogleAppsScript(payload, customUrl) {
-    const targetUrl = customUrl || CONFIG.SYSTEMES_AUTOMATIQUES_WEB_APP_URL || CONFIG.GOOGLE_APPS_SCRIPT_URL || CONFIG.EVAL_3EME_WEB_APP_URL;
+    const targetUrl = customUrl || CONFIG.ROBOTS_WEB_APP_URL || CONFIG.SYSTEMES_AUTOMATIQUES_WEB_APP_URL || CONFIG.GOOGLE_APPS_SCRIPT_URL || CONFIG.EVAL_3EME_WEB_APP_URL;
     if (!targetUrl || targetUrl.trim() === '') {
         console.warn("⚠️ Aucune URL Web App Google Apps Script configurée.");
         return false;

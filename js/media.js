@@ -223,26 +223,356 @@ function selectMbotVideo(index) {
     renderMbotModuleView(container);
 }
 
+// =====================================================
+// MODULE : LES ROBOTS (FICHE ÉLÈVE INTERACTIVE)
+// =====================================================
+
+const ROBOTS_TOTAL_QUESTIONS = 45;
+
+const ROBOTS_FILL_ANSWERS = {
+    blank1: "programmé",
+    blank2: "dangereuses",
+    blank3: "précisément",
+    blank4: "capteurs",
+    blank5: "intelligence",
+    blank6: "environnement",
+    blank7: "apprentissage",
+    blank8: "performants",
+    blank9: "industrie"
+};
+
+const ROBOTS_TABLE_ANSWERS = {
+    asimo:       { pays: "Japon (2000)",          type: "Humanoïde",    secteur: "Domestique / Service",  tache: "Accueillir, marcher, interagir" },
+    bigdog:      { pays: "États-Unis (2005)",     type: "Quadrupède",   secteur: "Militaire",              tache: "Transporter du matériel" },
+    pepper:      { pays: "Japon (2014)",          type: "Humanoïde",    secteur: "Domestique / Service",   tache: "Accueillir, interagir" },
+    unimate:     { pays: "États-Unis (1961)",     type: "Bras robotisé",secteur: "Industriel",             tache: "Souder, assembler" },
+    nao:         { pays: "France (2006)",         type: "Humanoïde",    secteur: "Éducatif / Service",     tache: "Interagir, éduquer" },
+    kodomoroid:  { pays: "Japon (2014)",          type: "Androïde",     secteur: "Médical / Service",      tache: "Lire les informations, interagir" },
+    curiosity:   { pays: "États-Unis (2012)",     type: "Rover",        secteur: "Spatial",                tache: "Explorer le sol martien" },
+    rosa:        { pays: "France (2014)",         type: "Humanoïde",    secteur: "Médical / Service",      tache: "Assister l'humain" },
+    hulc:        { pays: "États-Unis (2009)",     type: "Exosquelette", secteur: "Militaire",              tache: "Transporter du matériel" }
+};
+
+function getRobotsStorageKey() {
+    if (typeof currentStudent !== 'undefined' && currentStudent) {
+        return `robots_sheet_data_${currentStudent.niveau}_${currentStudent.classe}_${currentStudent.nom}_${currentStudent.prenom}`.toLowerCase().replace(/\s+/g, '_');
+    }
+    return 'robots_sheet_data_guest';
+}
+
+function getRobotsStudentInfo() {
+    if (typeof currentStudent !== 'undefined' && currentStudent) {
+        return {
+            nom: currentStudent.nom || "Inconnu",
+            prenom: currentStudent.prenom || "",
+            classe: currentStudent.classe || "",
+            email: currentStudent.email || "",
+            id: currentStudent.id || ""
+        };
+    }
+    try {
+        const stored = localStorage.getItem("studentInfo") || localStorage.getItem("eleve") || localStorage.getItem("user");
+        if (stored) {
+            const parsed = JSON.parse(stored);
+            return {
+                nom: parsed.nom || parsed.name || "Inconnu",
+                prenom: parsed.prenom || parsed.firstName || "",
+                classe: parsed.classe || parsed.class || "",
+                email: parsed.email || "",
+                id: parsed.id || ""
+            };
+        }
+    } catch (e) { /* ignore */ }
+    return { nom: "Inconnu", prenom: "", classe: "", email: "", id: "" };
+}
+
+function computeRobotsScore() {
+    let score = 0;
+    for (let i = 1; i <= 9; i++) {
+        const select = document.getElementById("blank" + i);
+        if (select && select.value === ROBOTS_FILL_ANSWERS["blank" + i]) {
+            score += 1;
+        }
+    }
+    document.querySelectorAll('.robot-select').forEach(sel => {
+        const robot = sel.dataset.robot;
+        const field = sel.dataset.field;
+        if (ROBOTS_TABLE_ANSWERS[robot] && ROBOTS_TABLE_ANSWERS[robot][field] === sel.value) {
+            score += 1;
+        }
+    });
+    return score;
+}
+
+function saveRobotsState(submitted = false) {
+    const key = getRobotsStorageKey();
+    const data = {
+        submitted: submitted,
+        selects: {},
+        textareas: {
+            frise: document.getElementById("robotsFrise")?.value || "",
+            raisons: document.getElementById("raisons")?.value || "",
+            lithium: document.getElementById("lithium")?.value || ""
+        }
+    };
+    for (let i = 1; i <= 9; i++) {
+        const sel = document.getElementById("blank" + i);
+        if (sel) data.selects["blank" + i] = sel.value;
+    }
+    document.querySelectorAll('.robot-select').forEach(sel => {
+        const robot = sel.dataset.robot;
+        const field = sel.dataset.field;
+        data.selects[`${robot}_${field}`] = sel.value;
+    });
+    localStorage.setItem(key, JSON.stringify(data));
+}
+
+function loadRobotsState() {
+    const key = getRobotsStorageKey();
+    try {
+        const raw = localStorage.getItem(key);
+        if (!raw) return null;
+        return JSON.parse(raw);
+    } catch (e) {
+        return null;
+    }
+}
+
+function restoreRobotsState() {
+    const saved = loadRobotsState();
+    if (!saved) return false;
+
+    if (saved.selects) {
+        for (let i = 1; i <= 9; i++) {
+            const sel = document.getElementById("blank" + i);
+            if (sel && saved.selects["blank" + i] !== undefined) {
+                sel.value = saved.selects["blank" + i];
+            }
+        }
+        document.querySelectorAll('.robot-select').forEach(sel => {
+            const robot = sel.dataset.robot;
+            const field = sel.dataset.field;
+            const savedVal = saved.selects[`${robot}_${field}`];
+            if (savedVal !== undefined) {
+                sel.value = savedVal;
+            }
+        });
+    }
+
+    if (saved.textareas) {
+        if (saved.textareas.frise !== undefined) {
+            const el = document.getElementById("robotsFrise");
+            if (el) el.value = saved.textareas.frise;
+        }
+        if (saved.textareas.raisons !== undefined) {
+            const el = document.getElementById("raisons");
+            if (el) el.value = saved.textareas.raisons;
+        }
+        if (saved.textareas.lithium !== undefined) {
+            const el = document.getElementById("lithium");
+            if (el) el.value = saved.textareas.lithium;
+        }
+    }
+
+    if (saved.submitted) {
+        applyRobotsCorrectionUI();
+    }
+    return saved.submitted;
+}
+
+function applyRobotsHighlights() {
+    for (let i = 1; i <= 9; i++) {
+        const sel = document.getElementById("blank" + i);
+        if (!sel) continue;
+        const correct = ROBOTS_FILL_ANSWERS["blank" + i];
+        sel.classList.remove("correct-highlight", "wrong-highlight");
+        if (sel.value === correct) sel.classList.add("correct-highlight");
+        else if (sel.value !== "") sel.classList.add("wrong-highlight");
+    }
+    document.querySelectorAll('.robot-select').forEach(sel => {
+        sel.classList.remove("correct-highlight", "wrong-highlight");
+        const robot = sel.dataset.robot;
+        const field = sel.dataset.field;
+        if (ROBOTS_TABLE_ANSWERS[robot]) {
+            const correct = ROBOTS_TABLE_ANSWERS[robot][field];
+            if (sel.value === correct) sel.classList.add("correct-highlight");
+            else if (sel.value !== "") sel.classList.add("wrong-highlight");
+        }
+    });
+}
+
+function updateRobotsDetailPanel() {
+    const panel = document.getElementById("robotsDetailContent");
+    if (!panel) return;
+    let html = "";
+
+    html += "<strong>Définition (9 points) :</strong><br>";
+    html += "<table style='width:100%; border-collapse:collapse; margin:8px 0;'><tr><th>Trou</th><th>Votre réponse</th><th>Bonne réponse</th><th></th></tr>";
+    for (let i = 1; i <= 9; i++) {
+        const sel = document.getElementById("blank" + i);
+        const val = sel ? sel.value : "";
+        const correct = ROBOTS_FILL_ANSWERS["blank" + i];
+        const ok = val === correct;
+        html += `<tr><td>Trou ${i}</td><td>${escapeHTML(val) || "—"}</td><td>${escapeHTML(correct)}</td><td class="${ok ? 'ok' : 'ko'}">${ok ? '✓' : '✗'}</td></tr>`;
+    }
+    html += "</table>";
+
+    html += "<strong>Tableau des robots (36 points) :</strong><br>";
+    html += "<table style='width:100%; border-collapse:collapse; margin:8px 0;'><tr><th>Robot</th><th>Colonne</th><th>Votre réponse</th><th>Bonne réponse</th><th></th></tr>";
+    document.querySelectorAll('.robot-select').forEach(sel => {
+        const robot = sel.dataset.robot;
+        const field = sel.dataset.field;
+        const val = sel.value;
+        const correct = ROBOTS_TABLE_ANSWERS[robot] ? ROBOTS_TABLE_ANSWERS[robot][field] : "?";
+        const ok = val === correct;
+        const robotName = sel.closest('tr')?.querySelector('td')?.textContent || robot;
+        html += `<tr><td>${escapeHTML(robotName)}</td><td>${escapeHTML(field)}</td><td>${escapeHTML(val) || "—"}</td><td>${escapeHTML(correct)}</td><td class="${ok ? 'ok' : 'ko'}">${ok ? '✓' : '✗'}</td></tr>`;
+    });
+    html += "</table>";
+
+    panel.innerHTML = html;
+}
+
+function applyRobotsCorrectionUI() {
+    applyRobotsHighlights();
+
+    const scoreBar = document.getElementById("robotsScoreBar");
+    if (scoreBar) scoreBar.style.display = "flex";
+
+    const score = computeRobotsScore();
+    const display = document.getElementById("robotsScoreDisplay");
+    if (display) {
+        display.textContent = score + " / " + ROBOTS_TOTAL_QUESTIONS;
+        const pct = (score / ROBOTS_TOTAL_QUESTIONS) * 100;
+        display.classList.remove("good", "mid", "bad");
+        if (pct >= 80) display.classList.add("good");
+        else if (pct >= 50) display.classList.add("mid");
+        else display.classList.add("bad");
+    }
+
+    const badge = document.getElementById("robotsResultBadge");
+    if (badge) {
+        badge.textContent = `✅ Score : ${score} / ${ROBOTS_TOTAL_QUESTIONS}`;
+        badge.classList.add("show");
+    }
+
+    updateRobotsDetailPanel();
+}
+
+function toggleRobotsDetail() {
+    const panel = document.getElementById("robotsDetailPanel");
+    if (!panel) return;
+    panel.classList.toggle("show");
+    if (panel.classList.contains("show")) updateRobotsDetailPanel();
+}
+
+function toggleRobotsSheet(targetSectionId) {
+    const container = document.getElementById("robotsSheetContainer");
+    if (!container) return;
+
+    if (container.style.display === "none" || container.style.display === "") {
+        container.style.display = "block";
+        if (targetSectionId) {
+            const targetEl = document.getElementById(targetSectionId);
+            if (targetEl) {
+                targetEl.scrollIntoView({ behavior: "smooth", block: "start" });
+            } else {
+                container.scrollIntoView({ behavior: "smooth", block: "start" });
+            }
+        } else {
+            container.scrollIntoView({ behavior: "smooth", block: "start" });
+        }
+    } else {
+        // If already visible and target section requested, scroll to it, or collapse if same link clicked
+        if (targetSectionId) {
+            const targetEl = document.getElementById(targetSectionId);
+            if (targetEl) {
+                targetEl.scrollIntoView({ behavior: "smooth", block: "start" });
+                return;
+            }
+        }
+        container.style.display = "none";
+    }
+}
+
+async function sendRobotsToSheet() {
+    const student = getRobotsStudentInfo();
+
+    if (!student.nom || student.nom === "Inconnu") {
+        const proceed = confirm("⚠️ Impossible de récupérer votre identité automatiquement.\n\nVoulez-vous continuer l'envoi sans identification ? (Les résultats seront marqués 'Inconnu')");
+        if (!proceed) return;
+    }
+
+    const score = computeRobotsScore();
+
+    // Enregistrer l'état comme soumis et appliquer l'UI de correction
+    saveRobotsState(true);
+    applyRobotsCorrectionUI();
+
+    const details = {
+        definition: {},
+        tableau: {},
+        reponses_libres: {
+            frise: document.getElementById('robotsFrise')?.value || "",
+            raisons: document.getElementById("raisons")?.value || "",
+            lithium: document.getElementById("lithium")?.value || ""
+        }
+    };
+    for (let i = 1; i <= 9; i++) {
+        const sel = document.getElementById("blank" + i);
+        details.definition["blank" + i] = sel ? sel.value : "";
+    }
+    document.querySelectorAll('.robot-select').forEach(sel => {
+        const robot = sel.dataset.robot;
+        const field = sel.dataset.field;
+        if (!details.tableau[robot]) details.tableau[robot] = {};
+        details.tableau[robot][field] = sel.value;
+    });
+
+    const payload = {
+        nom: student.nom,
+        prenom: student.prenom,
+        classe: student.classe,
+        email: student.email,
+        id_eleve: student.id,
+        score: score,
+        total: ROBOTS_TOTAL_QUESTIONS,
+        resultats: `${score} / ${ROBOTS_TOTAL_QUESTIONS}`,
+        details: JSON.stringify(details),
+        date: new Date().toISOString(),
+        timestamp: new Date().toISOString(),
+        page: "Vous avez dit robot"
+    };
+
+    const targetUrl = CONFIG.ROBOTS_WEB_APP_URL || CONFIG.SYSTEMES_AUTOMATIQUES_WEB_APP_URL || CONFIG.GOOGLE_APPS_SCRIPT_URL;
+
+    try {
+        await fetch(targetUrl, {
+            method: "POST",
+            mode: "no-cors",
+            headers: { "Content-Type": "text/plain;charset=utf-8" },
+            body: JSON.stringify(payload)
+        });
+        alert("✅ Résultats envoyés ! Score : " + score + "/" + ROBOTS_TOTAL_QUESTIONS);
+    } catch (error) {
+        console.error("Erreur d'envoi :", error);
+        alert("❌ Erreur lors de l'envoi.\nScore local : " + score + "/" + ROBOTS_TOTAL_QUESTIONS);
+    }
+}
+
 function openRobotsModule(activity) {
     document.getElementById('dashboardScreen').style.display = 'none';
     const container = document.getElementById('activityContent');
 
-    const pdfUrl = activity.pdfUrl || "https://drive.google.com/file/d/1JeJeG6JOY9ldXYv0LYj0q7NtgPHpw0Ra/view?usp=sharing";
+    const studentInfo = getRobotsStudentInfo();
 
     container.innerHTML = `
-        <div class="media-container" style="max-width: 950px; margin: 0 auto; padding: 25px 15px; font-family: 'Plus Jakarta Sans', sans-serif;">
+        <div class="media-container" style="max-width: 1050px; margin: 0 auto; padding: 25px 15px; font-family: 'Plus Jakarta Sans', sans-serif;">
 
             <!-- En-tête de la séquence -->
             <div style="background: linear-gradient(135deg, #0F172A, #1E293B); color: white; padding: 35px 25px; border-radius: 16px; text-align: center; margin-bottom: 25px; box-shadow: var(--shadow-md);">
                 <h1 style="margin: 0 0 6px 0; font-size: 2.2rem; font-weight: 800; font-family: 'Outfit', sans-serif;">🤖 Les Robots</h1>
                 <p style="margin: 0; opacity: 0.9; font-size: 1.05rem;">Découverte, histoire, impact sociétal et environnemental</p>
-            </div>
-
-            <!-- Bannières Ressource et Fiche Élève -->
-            <div style="display: flex; gap: 15px; justify-content: center; flex-wrap: wrap; margin-bottom: 30px;">
-                <a href="${escapeHTML(pdfUrl)}" target="_blank" rel="noopener noreferrer" style="background: var(--accent, #F97316); color: white; text-decoration: none; padding: 12px 24px; border-radius: 10px; font-weight: 700; font-size: 0.95rem; display: inline-flex; align-items: center; gap: 8px; box-shadow: var(--shadow-sm); transition: transform 0.2s, opacity 0.2s;">
-                    📄 Télécharger la Fiche Élève (PDF)
-                </a>
             </div>
 
             <!-- Introduction -->
@@ -258,7 +588,9 @@ function openRobotsModule(activity) {
                     <span style="background: var(--primary, #0F172A); color: white; width: 32px; height: 32px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; font-size: 1rem; font-weight: 800; flex-shrink: 0;">1</span>
                     Qu'est-ce qu'un robot ?
                 </h2>
-                <p style="margin: 10px 0;">✏️ Complète le tableau (page 1 de la fiche élève) afin d'identifier les différents types de robots et les tâches qu'ils sont capables d'accomplir.</p>
+                <p style="margin: 10px 0; font-size: 1.02rem; line-height: 1.6;">
+                    ✏️ Complète le tableau dans le document suivant et valide tes réponses ( <a href="javascript:void(0)" onclick="toggleRobotsSheet('robots_section_1')" style="color: #2563EB; font-weight: 700; text-decoration: underline;">lien cliquable</a> ).
+                </p>
                 <p style="margin: 10px 0 6px 0; font-weight: 700; color: var(--navy);">Robots à découvrir <small style="font-weight: 400; color: var(--text-muted);">(clique sur un nom pour ouvrir l'article)</small> :</p>
                 <ul style="margin: 8px 0 0 20px; padding: 0; display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 10px; list-style: none;">
                     <li><a href="https://www.usinenouvelle.com/article/asimo-le-coureur.N1855052" target="_blank" rel="noopener noreferrer" style="color: var(--primary); text-decoration: none; font-weight: 600;">🤖 Asimo, le coureur</a></li>
@@ -279,7 +611,686 @@ function openRobotsModule(activity) {
                     <span style="background: var(--primary, #0F172A); color: white; width: 32px; height: 32px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; font-size: 1rem; font-weight: 800; flex-shrink: 0;">2</span>
                     La robotique hier et aujourd'hui
                 </h2>
-                <p style="margin: 10px 0;">✏️ Complète <a href="https://learningapps.org/watch?v=phyrdcknn20" target="_blank" rel="noopener noreferrer" style="color: #2563EB; font-weight: 700; text-decoration: underline;">ce texte à trous en ligne</a>, puis recopie-le une fois corrigé (page 1 de la fiche élève).</p>
+                <p style="margin: 10px 0; font-size: 1.02rem; line-height: 1.6;">
+                    ✏️ Complète le document suivant et valide tes réponses ( <a href="javascript:void(0)" onclick="toggleRobotsSheet('robots_section_2')" style="color: #2563EB; font-weight: 700; text-decoration: underline;">lien cliquable</a> ).
+                </p>
+            </div>
+
+            <!-- EMBEDDED INTERACTIVE SHEET CONTAINER -->
+            <div id="robotsSheetContainer" style="display: none; background: #f0f4f8; border-radius: 24px; padding: 30px 25px; margin: 30px 0; box-shadow: 0 10px 25px rgba(0,0,0,0.1); border: 2px solid #3b82f6;">
+
+                <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; margin-bottom: 20px; border-bottom: 2px solid #cbd5e1; padding-bottom: 12px;">
+                    <span style="font-size: 1.3rem; font-weight: 800; color: #1e3a5f;">📄 Fiche élève interactive</span>
+                    <button onclick="toggleRobotsSheet()" style="background: #ef4444; color: white; border: none; padding: 8px 16px; border-radius: 20px; font-weight: 700; cursor: pointer; font-size: 0.9rem;">
+                        ✖️ Fermer le document
+                    </button>
+                </div>
+
+                <!-- BARRE DE SCORE FLOTTANTE (Visuelle après soumission) -->
+                <div class="score-bar" id="robotsScoreBar" style="display: none;">
+                    <span>🤖 Score :</span>
+                    <span class="score-value" id="robotsScoreDisplay">0 / 45</span>
+                    <button class="detail-toggle" id="robotsToggleDetail" onclick="toggleRobotsDetail()">Voir le détail</button>
+                </div>
+
+                <!-- PANNEAU DE DÉTAIL -->
+                <div class="detail-panel" id="robotsDetailPanel">
+                    <strong>Détail de la correction :</strong>
+                    <div id="robotsDetailContent"></div>
+                </div>
+
+                <!-- INFO ÉLÈVE (récupérée automatiquement) -->
+                <div class="user-info" id="robotsUserInfo">
+                    <span>👤 <strong id="robotsUserName">${escapeHTML(studentInfo.prenom ? studentInfo.prenom + ' ' + studentInfo.nom : studentInfo.nom)}</strong></span>
+                    <span id="robotsUserClass">${escapeHTML(studentInfo.classe ? 'Classe : ' + studentInfo.classe : '')}</span>
+                </div>
+
+                <h1 style="color: #1e3a5f; font-size: 1.8rem; border-bottom: 3px solid #3b82f6; padding-bottom: 10px; margin-top: 0;">🤖 Vous avez dit robot ? — Fiche élève</h1>
+
+                <!-- SECTION 1 : EXEMPLES DE ROBOTS -->
+                <div id="robots_section_1">
+                    <h2 style="color: #0f2b4b; font-size: 1.3rem; margin-top: 25px; margin-bottom: 15px; background: #e6f0ff; padding: 8px 15px; border-radius: 12px;">1. Exemples de robots</h2>
+                    <p>Compléter le tableau :</p>
+                    <div style="overflow-x: auto;">
+                        <table class="robot-table" style="width: 100%; border-collapse: collapse; margin: 15px 0; font-size: 0.95rem;">
+                            <thead>
+                                <tr>
+                                    <th style="border: 1px solid #cbd5e1; padding: 10px 8px; background: #1e3a5f; color: white;">Nom</th>
+                                    <th style="border: 1px solid #cbd5e1; padding: 10px 8px; background: #1e3a5f; color: white;">Pays (année)</th>
+                                    <th style="border: 1px solid #cbd5e1; padding: 10px 8px; background: #1e3a5f; color: white;">Type</th>
+                                    <th style="border: 1px solid #cbd5e1; padding: 10px 8px; background: #1e3a5f; color: white;">Secteur</th>
+                                    <th style="border: 1px solid #cbd5e1; padding: 10px 8px; background: #1e3a5f; color: white;">Tâche(s)</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td style="border: 1px solid #cbd5e1; padding: 10px 8px; font-weight: bold; background: white;">Asimo</td>
+                                    <td style="border: 1px solid #cbd5e1; padding: 6px; background: white;">
+                                        <select class="robot-select" data-robot="asimo" data-field="pays" onchange="saveRobotsState(false)" style="width:100%; padding:6px; border-radius:8px; border:1px solid #94a3b8;">
+                                            <option value="">--</option>
+                                            <option value="Japon (2000)">Japon (2000)</option>
+                                            <option value="Japon (2011)">Japon (2011)</option>
+                                            <option value="États-Unis (2005)">États-Unis (2005)</option>
+                                            <option value="Japon (2014)">Japon (2014)</option>
+                                            <option value="Bolivie (2020)">Bolivie (2020)</option>
+                                            <option value="France (2014)">France (2014)</option>
+                                            <option value="États-Unis (2012)">États-Unis (2012)</option>
+                                        </select>
+                                    </td>
+                                    <td style="border: 1px solid #cbd5e1; padding: 6px; background: white;">
+                                        <select class="robot-select" data-robot="asimo" data-field="type" onchange="saveRobotsState(false)" style="width:100%; padding:6px; border-radius:8px; border:1px solid #94a3b8;">
+                                            <option value="">--</option>
+                                            <option value="Humanoïde">Humanoïde</option>
+                                            <option value="Quadrupède">Quadrupède</option>
+                                            <option value="Exosquelette">Exosquelette</option>
+                                            <option value="Bras robotisé">Bras robotisé</option>
+                                            <option value="Rover">Rover</option>
+                                            <option value="Androïde">Androïde</option>
+                                        </select>
+                                    </td>
+                                    <td style="border: 1px solid #cbd5e1; padding: 6px; background: white;">
+                                        <select class="robot-select" data-robot="asimo" data-field="secteur" onchange="saveRobotsState(false)" style="width:100%; padding:6px; border-radius:8px; border:1px solid #94a3b8;">
+                                            <option value="">--</option>
+                                            <option value="Domestique / Service">Domestique / Service</option>
+                                            <option value="Militaire">Militaire</option>
+                                            <option value="Industriel">Industriel</option>
+                                            <option value="Médical">Médical</option>
+                                            <option value="Spatial">Spatial</option>
+                                            <option value="Loisirs">Loisirs</option>
+                                        </select>
+                                    </td>
+                                    <td style="border: 1px solid #cbd5e1; padding: 6px; background: white;">
+                                        <select class="robot-select" data-robot="asimo" data-field="tache" onchange="saveRobotsState(false)" style="width:100%; padding:6px; border-radius:8px; border:1px solid #94a3b8;">
+                                            <option value="">--</option>
+                                            <option value="Accueillir, marcher, interagir">Accueillir, marcher, interagir</option>
+                                            <option value="Transporter du matériel">Transporter du matériel</option>
+                                            <option value="Assister l'humain">Assister l'humain</option>
+                                            <option value="Souder, assembler">Souder, assembler</option>
+                                            <option value="Explorer le sol martien">Explorer le sol martien</option>
+                                            <option value="Tenir compagnie, divertir">Tenir compagnie, divertir</option>
+                                        </select>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td style="border: 1px solid #cbd5e1; padding: 10px 8px; font-weight: bold; background: white;">Big Dog</td>
+                                    <td style="border: 1px solid #cbd5e1; padding: 6px; background: white;">
+                                        <select class="robot-select" data-robot="bigdog" data-field="pays" onchange="saveRobotsState(false)" style="width:100%; padding:6px; border-radius:8px; border:1px solid #94a3b8;">
+                                            <option value="">--</option>
+                                            <option value="États-Unis (2005)">États-Unis (2005)</option>
+                                            <option value="Japon (2000)">Japon (2000)</option>
+                                            <option value="Japon (2011)">Japon (2011)</option>
+                                            <option value="France (2014)">France (2014)</option>
+                                            <option value="Bolivie (2020)">Bolivie (2020)</option>
+                                            <option value="États-Unis (2012)">États-Unis (2012)</option>
+                                        </select>
+                                    </td>
+                                    <td style="border: 1px solid #cbd5e1; padding: 6px; background: white;">
+                                        <select class="robot-select" data-robot="bigdog" data-field="type" onchange="saveRobotsState(false)" style="width:100%; padding:6px; border-radius:8px; border:1px solid #94a3b8;">
+                                            <option value="">--</option>
+                                            <option value="Quadrupède">Quadrupède</option>
+                                            <option value="Humanoïde">Humanoïde</option>
+                                            <option value="Exosquelette">Exosquelette</option>
+                                            <option value="Bras robotisé">Bras robotisé</option>
+                                            <option value="Rover">Rover</option>
+                                            <option value="Androïde">Androïde</option>
+                                        </select>
+                                    </td>
+                                    <td style="border: 1px solid #cbd5e1; padding: 6px; background: white;">
+                                        <select class="robot-select" data-robot="bigdog" data-field="secteur" onchange="saveRobotsState(false)" style="width:100%; padding:6px; border-radius:8px; border:1px solid #94a3b8;">
+                                            <option value="">--</option>
+                                            <option value="Militaire">Militaire</option>
+                                            <option value="Domestique / Service">Domestique / Service</option>
+                                            <option value="Industriel">Industriel</option>
+                                            <option value="Médical">Médical</option>
+                                            <option value="Spatial">Spatial</option>
+                                            <option value="Loisirs">Loisirs</option>
+                                        </select>
+                                    </td>
+                                    <td style="border: 1px solid #cbd5e1; padding: 6px; background: white;">
+                                        <select class="robot-select" data-robot="bigdog" data-field="tache" onchange="saveRobotsState(false)" style="width:100%; padding:6px; border-radius:8px; border:1px solid #94a3b8;">
+                                            <option value="">--</option>
+                                            <option value="Transporter du matériel">Transporter du matériel</option>
+                                            <option value="Accueillir, marcher, interagir">Accueillir, marcher, interagir</option>
+                                            <option value="Assister l'humain">Assister l'humain</option>
+                                            <option value="Souder, assembler">Souder, assembler</option>
+                                            <option value="Explorer le sol martien">Explorer le sol martien</option>
+                                            <option value="Tenir compagnie, divertir">Tenir compagnie, divertir</option>
+                                        </select>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td style="border: 1px solid #cbd5e1; padding: 10px 8px; font-weight: bold; background: white;">Pepper</td>
+                                    <td style="border: 1px solid #cbd5e1; padding: 6px; background: white;">
+                                        <select class="robot-select" data-robot="pepper" data-field="pays" onchange="saveRobotsState(false)" style="width:100%; padding:6px; border-radius:8px; border:1px solid #94a3b8;">
+                                            <option value="">--</option>
+                                            <option value="Japon (2014)">Japon (2014)</option>
+                                            <option value="Japon (2000)">Japon (2000)</option>
+                                            <option value="Japon (2011)">Japon (2011)</option>
+                                            <option value="États-Unis (2005)">États-Unis (2005)</option>
+                                            <option value="France (2014)">France (2014)</option>
+                                            <option value="Bolivie (2020)">Bolivie (2020)</option>
+                                            <option value="États-Unis (2012)">États-Unis (2012)</option>
+                                        </select>
+                                    </td>
+                                    <td style="border: 1px solid #cbd5e1; padding: 6px; background: white;">
+                                        <select class="robot-select" data-robot="pepper" data-field="type" onchange="saveRobotsState(false)" style="width:100%; padding:6px; border-radius:8px; border:1px solid #94a3b8;">
+                                            <option value="">--</option>
+                                            <option value="Humanoïde">Humanoïde</option>
+                                            <option value="Quadrupède">Quadrupède</option>
+                                            <option value="Exosquelette">Exosquelette</option>
+                                            <option value="Bras robotisé">Bras robotisé</option>
+                                            <option value="Rover">Rover</option>
+                                            <option value="Androïde">Androïde</option>
+                                        </select>
+                                    </td>
+                                    <td style="border: 1px solid #cbd5e1; padding: 6px; background: white;">
+                                        <select class="robot-select" data-robot="pepper" data-field="secteur" onchange="saveRobotsState(false)" style="width:100%; padding:6px; border-radius:8px; border:1px solid #94a3b8;">
+                                            <option value="">--</option>
+                                            <option value="Domestique / Service">Domestique / Service</option>
+                                            <option value="Militaire">Militaire</option>
+                                            <option value="Industriel">Industriel</option>
+                                            <option value="Médical">Médical</option>
+                                            <option value="Spatial">Spatial</option>
+                                            <option value="Loisirs">Loisirs</option>
+                                        </select>
+                                    </td>
+                                    <td style="border: 1px solid #cbd5e1; padding: 6px; background: white;">
+                                        <select class="robot-select" data-robot="pepper" data-field="tache" onchange="saveRobotsState(false)" style="width:100%; padding:6px; border-radius:8px; border:1px solid #94a3b8;">
+                                            <option value="">--</option>
+                                            <option value="Accueillir, interagir">Accueillir, interagir</option>
+                                            <option value="Transporter du matériel">Transporter du matériel</option>
+                                            <option value="Assister l'humain">Assister l'humain</option>
+                                            <option value="Souder, assembler">Souder, assembler</option>
+                                            <option value="Explorer le sol martien">Explorer le sol martien</option>
+                                            <option value="Tenir compagnie, divertir">Tenir compagnie, divertir</option>
+                                        </select>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td style="border: 1px solid #cbd5e1; padding: 10px 8px; font-weight: bold; background: white;">Unimate</td>
+                                    <td style="border: 1px solid #cbd5e1; padding: 6px; background: white;">
+                                        <select class="robot-select" data-robot="unimate" data-field="pays" onchange="saveRobotsState(false)" style="width:100%; padding:6px; border-radius:8px; border:1px solid #94a3b8;">
+                                            <option value="">--</option>
+                                            <option value="États-Unis (1961)">États-Unis (1961)</option>
+                                            <option value="Japon (2000)">Japon (2000)</option>
+                                            <option value="Japon (2011)">Japon (2011)</option>
+                                            <option value="États-Unis (2005)">États-Unis (2005)</option>
+                                            <option value="France (2014)">France (2014)</option>
+                                        </select>
+                                    </td>
+                                    <td style="border: 1px solid #cbd5e1; padding: 6px; background: white;">
+                                        <select class="robot-select" data-robot="unimate" data-field="type" onchange="saveRobotsState(false)" style="width:100%; padding:6px; border-radius:8px; border:1px solid #94a3b8;">
+                                            <option value="">--</option>
+                                            <option value="Bras robotisé">Bras robotisé</option>
+                                            <option value="Humanoïde">Humanoïde</option>
+                                            <option value="Quadrupède">Quadrupède</option>
+                                            <option value="Exosquelette">Exosquelette</option>
+                                            <option value="Rover">Rover</option>
+                                            <option value="Androïde">Androïde</option>
+                                        </select>
+                                    </td>
+                                    <td style="border: 1px solid #cbd5e1; padding: 6px; background: white;">
+                                        <select class="robot-select" data-robot="unimate" data-field="secteur" onchange="saveRobotsState(false)" style="width:100%; padding:6px; border-radius:8px; border:1px solid #94a3b8;">
+                                            <option value="">--</option>
+                                            <option value="Industriel">Industriel</option>
+                                            <option value="Domestique / Service">Domestique / Service</option>
+                                            <option value="Militaire">Militaire</option>
+                                            <option value="Médical">Médical</option>
+                                            <option value="Spatial">Spatial</option>
+                                            <option value="Loisirs">Loisirs</option>
+                                        </select>
+                                    </td>
+                                    <td style="border: 1px solid #cbd5e1; padding: 6px; background: white;">
+                                        <select class="robot-select" data-robot="unimate" data-field="tache" onchange="saveRobotsState(false)" style="width:100%; padding:6px; border-radius:8px; border:1px solid #94a3b8;">
+                                            <option value="">--</option>
+                                            <option value="Souder, assembler">Souder, assembler</option>
+                                            <option value="Accueillir, interagir">Accueillir, interagir</option>
+                                            <option value="Transporter du matériel">Transporter du matériel</option>
+                                            <option value="Assister l'humain">Assister l'humain</option>
+                                            <option value="Explorer le sol martien">Explorer le sol martien</option>
+                                        </select>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td style="border: 1px solid #cbd5e1; padding: 10px 8px; font-weight: bold; background: white;">Nao</td>
+                                    <td style="border: 1px solid #cbd5e1; padding: 6px; background: white;">
+                                        <select class="robot-select" data-robot="nao" data-field="pays" onchange="saveRobotsState(false)" style="width:100%; padding:6px; border-radius:8px; border:1px solid #94a3b8;">
+                                            <option value="">--</option>
+                                            <option value="France (2006)">France (2006)</option>
+                                            <option value="Japon (2000)">Japon (2000)</option>
+                                            <option value="Japon (2011)">Japon (2011)</option>
+                                            <option value="États-Unis (2005)">États-Unis (2005)</option>
+                                            <option value="France (2014)">France (2014)</option>
+                                        </select>
+                                    </td>
+                                    <td style="border: 1px solid #cbd5e1; padding: 6px; background: white;">
+                                        <select class="robot-select" data-robot="nao" data-field="type" onchange="saveRobotsState(false)" style="width:100%; padding:6px; border-radius:8px; border:1px solid #94a3b8;">
+                                            <option value="">--</option>
+                                            <option value="Humanoïde">Humanoïde</option>
+                                            <option value="Quadrupède">Quadrupède</option>
+                                            <option value="Exosquelette">Exosquelette</option>
+                                            <option value="Bras robotisé">Bras robotisé</option>
+                                            <option value="Rover">Rover</option>
+                                            <option value="Androïde">Androïde</option>
+                                        </select>
+                                    </td>
+                                    <td style="border: 1px solid #cbd5e1; padding: 6px; background: white;">
+                                        <select class="robot-select" data-robot="nao" data-field="secteur" onchange="saveRobotsState(false)" style="width:100%; padding:6px; border-radius:8px; border:1px solid #94a3b8;">
+                                            <option value="">--</option>
+                                            <option value="Éducatif / Service">Éducatif / Service</option>
+                                            <option value="Domestique / Service">Domestique / Service</option>
+                                            <option value="Militaire">Militaire</option>
+                                            <option value="Industriel">Industriel</option>
+                                            <option value="Médical">Médical</option>
+                                            <option value="Spatial">Spatial</option>
+                                        </select>
+                                    </td>
+                                    <td style="border: 1px solid #cbd5e1; padding: 6px; background: white;">
+                                        <select class="robot-select" data-robot="nao" data-field="tache" onchange="saveRobotsState(false)" style="width:100%; padding:6px; border-radius:8px; border:1px solid #94a3b8;">
+                                            <option value="">--</option>
+                                            <option value="Interagir, éduquer">Interagir, éduquer</option>
+                                            <option value="Accueillir, interagir">Accueillir, interagir</option>
+                                            <option value="Transporter du matériel">Transporter du matériel</option>
+                                            <option value="Assister l'humain">Assister l'humain</option>
+                                            <option value="Souder, assembler">Souder, assembler</option>
+                                        </select>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td style="border: 1px solid #cbd5e1; padding: 10px 8px; font-weight: bold; background: white;">Kodomoroid</td>
+                                    <td style="border: 1px solid #cbd5e1; padding: 6px; background: white;">
+                                        <select class="robot-select" data-robot="kodomoroid" data-field="pays" onchange="saveRobotsState(false)" style="width:100%; padding:6px; border-radius:8px; border:1px solid #94a3b8;">
+                                            <option value="">--</option>
+                                            <option value="Japon (2014)">Japon (2014)</option>
+                                            <option value="Japon (2000)">Japon (2000)</option>
+                                            <option value="Japon (2011)">Japon (2011)</option>
+                                            <option value="États-Unis (2005)">États-Unis (2005)</option>
+                                            <option value="France (2014)">France (2014)</option>
+                                        </select>
+                                    </td>
+                                    <td style="border: 1px solid #cbd5e1; padding: 6px; background: white;">
+                                        <select class="robot-select" data-robot="kodomoroid" data-field="type" onchange="saveRobotsState(false)" style="width:100%; padding:6px; border-radius:8px; border:1px solid #94a3b8;">
+                                            <option value="">--</option>
+                                            <option value="Androïde">Androïde</option>
+                                            <option value="Humanoïde">Humanoïde</option>
+                                            <option value="Quadrupède">Quadrupède</option>
+                                            <option value="Exosquelette">Exosquelette</option>
+                                            <option value="Bras robotisé">Bras robotisé</option>
+                                            <option value="Rover">Rover</option>
+                                        </select>
+                                    </td>
+                                    <td style="border: 1px solid #cbd5e1; padding: 6px; background: white;">
+                                        <select class="robot-select" data-robot="kodomoroid" data-field="secteur" onchange="saveRobotsState(false)" style="width:100%; padding:6px; border-radius:8px; border:1px solid #94a3b8;">
+                                            <option value="">--</option>
+                                            <option value="Médical / Service">Médical / Service</option>
+                                            <option value="Domestique / Service">Domestique / Service</option>
+                                            <option value="Militaire">Militaire</option>
+                                            <option value="Industriel">Industriel</option>
+                                            <option value="Spatial">Spatial</option>
+                                            <option value="Loisirs">Loisirs</option>
+                                        </select>
+                                    </td>
+                                    <td style="border: 1px solid #cbd5e1; padding: 6px; background: white;">
+                                        <select class="robot-select" data-robot="kodomoroid" data-field="tache" onchange="saveRobotsState(false)" style="width:100%; padding:6px; border-radius:8px; border:1px solid #94a3b8;">
+                                            <option value="">--</option>
+                                            <option value="Lire les informations, interagir">Lire les informations, interagir</option>
+                                            <option value="Accueillir, interagir">Accueillir, interagir</option>
+                                            <option value="Transporter du matériel">Transporter du matériel</option>
+                                            <option value="Assister l'humain">Assister l'humain</option>
+                                            <option value="Souder, assembler">Souder, assembler</option>
+                                        </select>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td style="border: 1px solid #cbd5e1; padding: 10px 8px; font-weight: bold; background: white;">Rover Curiosity</td>
+                                    <td style="border: 1px solid #cbd5e1; padding: 6px; background: white;">
+                                        <select class="robot-select" data-robot="curiosity" data-field="pays" onchange="saveRobotsState(false)" style="width:100%; padding:6px; border-radius:8px; border:1px solid #94a3b8;">
+                                            <option value="">--</option>
+                                            <option value="États-Unis (2012)">États-Unis (2012)</option>
+                                            <option value="Japon (2000)">Japon (2000)</option>
+                                            <option value="Japon (2011)">Japon (2011)</option>
+                                            <option value="États-Unis (2005)">États-Unis (2005)</option>
+                                            <option value="France (2014)">France (2014)</option>
+                                        </select>
+                                    </td>
+                                    <td style="border: 1px solid #cbd5e1; padding: 6px; background: white;">
+                                        <select class="robot-select" data-robot="curiosity" data-field="type" onchange="saveRobotsState(false)" style="width:100%; padding:6px; border-radius:8px; border:1px solid #94a3b8;">
+                                            <option value="">--</option>
+                                            <option value="Rover">Rover</option>
+                                            <option value="Humanoïde">Humanoïde</option>
+                                            <option value="Quadrupède">Quadrupède</option>
+                                            <option value="Exosquelette">Exosquelette</option>
+                                            <option value="Bras robotisé">Bras robotisé</option>
+                                            <option value="Androïde">Androïde</option>
+                                        </select>
+                                    </td>
+                                    <td style="border: 1px solid #cbd5e1; padding: 6px; background: white;">
+                                        <select class="robot-select" data-robot="curiosity" data-field="secteur" onchange="saveRobotsState(false)" style="width:100%; padding:6px; border-radius:8px; border:1px solid #94a3b8;">
+                                            <option value="">--</option>
+                                            <option value="Spatial">Spatial</option>
+                                            <option value="Domestique / Service">Domestique / Service</option>
+                                            <option value="Militaire">Militaire</option>
+                                            <option value="Industriel">Industriel</option>
+                                            <option value="Médical">Médical</option>
+                                            <option value="Loisirs">Loisirs</option>
+                                        </select>
+                                    </td>
+                                    <td style="border: 1px solid #cbd5e1; padding: 6px; background: white;">
+                                        <select class="robot-select" data-robot="curiosity" data-field="tache" onchange="saveRobotsState(false)" style="width:100%; padding:6px; border-radius:8px; border:1px solid #94a3b8;">
+                                            <option value="">--</option>
+                                            <option value="Explorer le sol martien">Explorer le sol martien</option>
+                                            <option value="Accueillir, interagir">Accueillir, interagir</option>
+                                            <option value="Transporter du matériel">Transporter du matériel</option>
+                                            <option value="Assister l'humain">Assister l'humain</option>
+                                            <option value="Souder, assembler">Souder, assembler</option>
+                                        </select>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td style="border: 1px solid #cbd5e1; padding: 10px 8px; font-weight: bold; background: white;">Rosa</td>
+                                    <td style="border: 1px solid #cbd5e1; padding: 6px; background: white;">
+                                        <select class="robot-select" data-robot="rosa" data-field="pays" onchange="saveRobotsState(false)" style="width:100%; padding:6px; border-radius:8px; border:1px solid #94a3b8;">
+                                            <option value="">--</option>
+                                            <option value="France (2014)">France (2014)</option>
+                                            <option value="Japon (2000)">Japon (2000)</option>
+                                            <option value="Japon (2011)">Japon (2011)</option>
+                                            <option value="États-Unis (2005)">États-Unis (2005)</option>
+                                            <option value="Bolivie (2020)">Bolivie (2020)</option>
+                                            <option value="États-Unis (2012)">États-Unis (2012)</option>
+                                        </select>
+                                    </td>
+                                    <td style="border: 1px solid #cbd5e1; padding: 6px; background: white;">
+                                        <select class="robot-select" data-robot="rosa" data-field="type" onchange="saveRobotsState(false)" style="width:100%; padding:6px; border-radius:8px; border:1px solid #94a3b8;">
+                                            <option value="">--</option>
+                                            <option value="Humanoïde">Humanoïde</option>
+                                            <option value="Quadrupède">Quadrupède</option>
+                                            <option value="Exosquelette">Exosquelette</option>
+                                            <option value="Bras robotisé">Bras robotisé</option>
+                                            <option value="Rover">Rover</option>
+                                            <option value="Androïde">Androïde</option>
+                                        </select>
+                                    </td>
+                                    <td style="border: 1px solid #cbd5e1; padding: 6px; background: white;">
+                                        <select class="robot-select" data-robot="rosa" data-field="secteur" onchange="saveRobotsState(false)" style="width:100%; padding:6px; border-radius:8px; border:1px solid #94a3b8;">
+                                            <option value="">--</option>
+                                            <option value="Médical / Service">Médical / Service</option>
+                                            <option value="Domestique / Service">Domestique / Service</option>
+                                            <option value="Militaire">Militaire</option>
+                                            <option value="Industriel">Industriel</option>
+                                            <option value="Spatial">Spatial</option>
+                                            <option value="Loisirs">Loisirs</option>
+                                        </select>
+                                    </td>
+                                    <td style="border: 1px solid #cbd5e1; padding: 6px; background: white;">
+                                        <select class="robot-select" data-robot="rosa" data-field="tache" onchange="saveRobotsState(false)" style="width:100%; padding:6px; border-radius:8px; border:1px solid #94a3b8;">
+                                            <option value="">--</option>
+                                            <option value="Assister l'humain">Assister l'humain</option>
+                                            <option value="Accueillir, interagir">Accueillir, interagir</option>
+                                            <option value="Transporter du matériel">Transporter du matériel</option>
+                                            <option value="Souder, assembler">Souder, assembler</option>
+                                            <option value="Explorer le sol martien">Explorer le sol martien</option>
+                                        </select>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td style="border: 1px solid #cbd5e1; padding: 10px 8px; font-weight: bold; background: white;">Hulc</td>
+                                    <td style="border: 1px solid #cbd5e1; padding: 6px; background: white;">
+                                        <select class="robot-select" data-robot="hulc" data-field="pays" onchange="saveRobotsState(false)" style="width:100%; padding:6px; border-radius:8px; border:1px solid #94a3b8;">
+                                            <option value="">--</option>
+                                            <option value="États-Unis (2009)">États-Unis (2009)</option>
+                                            <option value="Japon (2000)">Japon (2000)</option>
+                                            <option value="Japon (2011)">Japon (2011)</option>
+                                            <option value="États-Unis (2005)">États-Unis (2005)</option>
+                                            <option value="France (2014)">France (2014)</option>
+                                        </select>
+                                    </td>
+                                    <td style="border: 1px solid #cbd5e1; padding: 6px; background: white;">
+                                        <select class="robot-select" data-robot="hulc" data-field="type" onchange="saveRobotsState(false)" style="width:100%; padding:6px; border-radius:8px; border:1px solid #94a3b8;">
+                                            <option value="">--</option>
+                                            <option value="Exosquelette">Exosquelette</option>
+                                            <option value="Humanoïde">Humanoïde</option>
+                                            <option value="Quadrupède">Quadrupède</option>
+                                            <option value="Bras robotisé">Bras robotisé</option>
+                                            <option value="Rover">Rover</option>
+                                            <option value="Androïde">Androïde</option>
+                                        </select>
+                                    </td>
+                                    <td style="border: 1px solid #cbd5e1; padding: 6px; background: white;">
+                                        <select class="robot-select" data-robot="hulc" data-field="secteur" onchange="saveRobotsState(false)" style="width:100%; padding:6px; border-radius:8px; border:1px solid #94a3b8;">
+                                            <option value="">--</option>
+                                            <option value="Militaire">Militaire</option>
+                                            <option value="Domestique / Service">Domestique / Service</option>
+                                            <option value="Industriel">Industriel</option>
+                                            <option value="Médical">Médical</option>
+                                            <option value="Spatial">Spatial</option>
+                                            <option value="Loisirs">Loisirs</option>
+                                        </select>
+                                    </td>
+                                    <td style="border: 1px solid #cbd5e1; padding: 6px; background: white;">
+                                        <select class="robot-select" data-robot="hulc" data-field="tache" onchange="saveRobotsState(false)" style="width:100%; padding:6px; border-radius:8px; border:1px solid #94a3b8;">
+                                            <option value="">--</option>
+                                            <option value="Transporter du matériel">Transporter du matériel</option>
+                                            <option value="Accueillir, interagir">Accueillir, interagir</option>
+                                            <option value="Assister l'humain">Assister l'humain</option>
+                                            <option value="Souder, assembler">Souder, assembler</option>
+                                            <option value="Explorer le sol martien">Explorer le sol martien</option>
+                                        </select>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- SECTION 2 : DÉFINITION DE LA ROBOTIQUE -->
+                <div id="robots_section_2">
+                    <h2 style="color: #0f2b4b; font-size: 1.3rem; margin-top: 25px; margin-bottom: 15px; background: #e6f0ff; padding: 8px 15px; border-radius: 12px;">2. Définition de la robotique</h2>
+                    <div class="word-bank" style="background: #eff6ff; border-radius: 14px; padding: 12px 18px; margin: 15px 0; font-size: 0.9rem; color: #1e40af; display: flex; flex-wrap: wrap; gap: 8px 16px; align-items: center;">
+                        <strong>Banque de mots :</strong>
+                        <span style="background: white; padding: 4px 12px; border-radius: 30px; border: 1px solid #bfdbfe; font-weight: 500;">programmé</span>
+                        <span style="background: white; padding: 4px 12px; border-radius: 30px; border: 1px solid #bfdbfe; font-weight: 500;">dangereuses</span>
+                        <span style="background: white; padding: 4px 12px; border-radius: 30px; border: 1px solid #bfdbfe; font-weight: 500;">précisément</span>
+                        <span style="background: white; padding: 4px 12px; border-radius: 30px; border: 1px solid #bfdbfe; font-weight: 500;">capteurs</span>
+                        <span style="background: white; padding: 4px 12px; border-radius: 30px; border: 1px solid #bfdbfe; font-weight: 500;">intelligence</span>
+                        <span style="background: white; padding: 4px 12px; border-radius: 30px; border: 1px solid #bfdbfe; font-weight: 500;">environnement</span>
+                        <span style="background: white; padding: 4px 12px; border-radius: 30px; border: 1px solid #bfdbfe; font-weight: 500;">apprentissage</span>
+                        <span style="background: white; padding: 4px 12px; border-radius: 30px; border: 1px solid #bfdbfe; font-weight: 500;">performants</span>
+                        <span style="background: white; padding: 4px 12px; border-radius: 30px; border: 1px solid #bfdbfe; font-weight: 500;">industrie</span>
+                    </div>
+                    <p style="line-height: 2.4; font-size: 1.05rem;">
+                        Un robot est un dispositif (mécanique, électronique et informatique) capable d'accomplir des tâches pour lesquelles il a été
+                        <span class="inline-select">
+                            <select id="blank1" data-answer="programmé" onchange="saveRobotsState(false)" style="padding: 4px 8px; border-radius: 20px; border: 1.5px solid #3b82f6; background: #eef6ff; font-size: 0.95rem; font-weight: 500; color: #0c4a6e; min-width: 130px;">
+                                <option value="">--</option>
+                                <option value="programmé">programmé</option>
+                                <option value="dangereuses">dangereuses</option>
+                                <option value="précisément">précisément</option>
+                                <option value="capteurs">capteurs</option>
+                                <option value="intelligence">intelligence</option>
+                                <option value="environnement">environnement</option>
+                                <option value="apprentissage">apprentissage</option>
+                                <option value="performants">performants</option>
+                                <option value="industrie">industrie</option>
+                            </select>
+                        </span>.
+                        Ces tâches peuvent être
+                        <span class="inline-select">
+                            <select id="blank2" data-answer="dangereuses" onchange="saveRobotsState(false)" style="padding: 4px 8px; border-radius: 20px; border: 1.5px solid #3b82f6; background: #eef6ff; font-size: 0.95rem; font-weight: 500; color: #0c4a6e; min-width: 130px;">
+                                <option value="">--</option>
+                                <option value="programmé">programmé</option>
+                                <option value="dangereuses">dangereuses</option>
+                                <option value="précisément">précisément</option>
+                                <option value="capteurs">capteurs</option>
+                                <option value="intelligence">intelligence</option>
+                                <option value="environnement">environnement</option>
+                                <option value="apprentissage">apprentissage</option>
+                                <option value="performants">performants</option>
+                                <option value="industrie">industrie</option>
+                            </select>
+                        </span>,
+                        pénibles, répétitives ou impossibles pour les humains, ou tout simplement exécutées plus rapidement, plus
+                        <span class="inline-select">
+                            <select id="blank3" data-answer="précisément" onchange="saveRobotsState(false)" style="padding: 4px 8px; border-radius: 20px; border: 1.5px solid #3b82f6; background: #eef6ff; font-size: 0.95rem; font-weight: 500; color: #0c4a6e; min-width: 130px;">
+                                <option value="">--</option>
+                                <option value="programmé">programmé</option>
+                                <option value="dangereuses">dangereuses</option>
+                                <option value="précisément">précisément</option>
+                                <option value="capteurs">capteurs</option>
+                                <option value="intelligence">intelligence</option>
+                                <option value="environnement">environnement</option>
+                                <option value="apprentissage">apprentissage</option>
+                                <option value="performants">performants</option>
+                                <option value="industrie">industrie</option>
+                            </select>
+                        </span>.
+                        Un robot est une machine qui possède des
+                        <span class="inline-select">
+                            <select id="blank4" data-answer="capteurs" onchange="saveRobotsState(false)" style="padding: 4px 8px; border-radius: 20px; border: 1.5px solid #3b82f6; background: #eef6ff; font-size: 0.95rem; font-weight: 500; color: #0c4a6e; min-width: 130px;">
+                                <option value="">--</option>
+                                <option value="programmé">programmé</option>
+                                <option value="dangereuses">dangereuses</option>
+                                <option value="précisément">précisément</option>
+                                <option value="capteurs">capteurs</option>
+                                <option value="intelligence">intelligence</option>
+                                <option value="environnement">environnement</option>
+                                <option value="apprentissage">apprentissage</option>
+                                <option value="performants">performants</option>
+                                <option value="industrie">industrie</option>
+                            </select>
+                        </span>
+                        et une
+                        <span class="inline-select">
+                            <select id="blank5" data-answer="intelligence" onchange="saveRobotsState(false)" style="padding: 4px 8px; border-radius: 20px; border: 1.5px solid #3b82f6; background: #eef6ff; font-size: 0.95rem; font-weight: 500; color: #0c4a6e; min-width: 130px;">
+                                <option value="">--</option>
+                                <option value="programmé">programmé</option>
+                                <option value="dangereuses">dangereuses</option>
+                                <option value="précisément">précisément</option>
+                                <option value="capteurs">capteurs</option>
+                                <option value="intelligence">intelligence</option>
+                                <option value="environnement">environnement</option>
+                                <option value="apprentissage">apprentissage</option>
+                                <option value="performants">performants</option>
+                                <option value="industrie">industrie</option>
+                            </select>
+                        </span>
+                        qui lui permettent de s'adapter à son
+                        <span class="inline-select">
+                            <select id="blank6" data-answer="environnement" onchange="saveRobotsState(false)" style="padding: 4px 8px; border-radius: 20px; border: 1.5px solid #3b82f6; background: #eef6ff; font-size: 0.95rem; font-weight: 500; color: #0c4a6e; min-width: 130px;">
+                                <option value="">--</option>
+                                <option value="programmé">programmé</option>
+                                <option value="dangereuses">dangereuses</option>
+                                <option value="précisément">précisément</option>
+                                <option value="capteurs">capteurs</option>
+                                <option value="intelligence">intelligence</option>
+                                <option value="environnement">environnement</option>
+                                <option value="apprentissage">apprentissage</option>
+                                <option value="performants">performants</option>
+                                <option value="industrie">industrie</option>
+                            </select>
+                        </span>.
+                        Certains robots sont même équipés d'un logiciel d'
+                        <span class="inline-select">
+                            <select id="blank7" data-answer="apprentissage" onchange="saveRobotsState(false)" style="padding: 4px 8px; border-radius: 20px; border: 1.5px solid #3b82f6; background: #eef6ff; font-size: 0.95rem; font-weight: 500; color: #0c4a6e; min-width: 130px;">
+                                <option value="">--</option>
+                                <option value="programmé">programmé</option>
+                                <option value="dangereuses">dangereuses</option>
+                                <option value="précisément">précisément</option>
+                                <option value="capteurs">capteurs</option>
+                                <option value="intelligence">intelligence</option>
+                                <option value="environnement">environnement</option>
+                                <option value="apprentissage">apprentissage</option>
+                                <option value="performants">performants</option>
+                                <option value="industrie">industrie</option>
+                            </select>
+                        </span>
+                        qui leur permet d'être encore plus
+                        <span class="inline-select">
+                            <select id="blank8" data-answer="performants" onchange="saveRobotsState(false)" style="padding: 4px 8px; border-radius: 20px; border: 1.5px solid #3b82f6; background: #eef6ff; font-size: 0.95rem; font-weight: 500; color: #0c4a6e; min-width: 130px;">
+                                <option value="">--</option>
+                                <option value="programmé">programmé</option>
+                                <option value="dangereuses">dangereuses</option>
+                                <option value="précisément">précisément</option>
+                                <option value="capteurs">capteurs</option>
+                                <option value="intelligence">intelligence</option>
+                                <option value="environnement">environnement</option>
+                                <option value="apprentissage">apprentissage</option>
+                                <option value="performants">performants</option>
+                                <option value="industrie">industrie</option>
+                            </select>
+                        </span>.
+                        Les robots sont souvent utilisés dans l'
+                        <span class="inline-select">
+                            <select id="blank9" data-answer="industrie" onchange="saveRobotsState(false)" style="padding: 4px 8px; border-radius: 20px; border: 1.5px solid #3b82f6; background: #eef6ff; font-size: 0.95rem; font-weight: 500; color: #0c4a6e; min-width: 130px;">
+                                <option value="">--</option>
+                                <option value="programmé">programmé</option>
+                                <option value="dangereuses">dangereuses</option>
+                                <option value="précisément">précisément</option>
+                                <option value="capteurs">capteurs</option>
+                                <option value="intelligence">intelligence</option>
+                                <option value="environnement">environnement</option>
+                                <option value="apprentissage">apprentissage</option>
+                                <option value="performants">performants</option>
+                                <option value="industrie">industrie</option>
+                            </select>
+                        </span>
+                        mais aussi dans les domaines militaire, médical, les services, les loisirs, à la maison...
+                    </p>
+                </div>
+
+                <!-- SECTION 3 : FRISE CHRONOLOGIQUE -->
+                <h2 style="color: #0f2b4b; font-size: 1.3rem; margin-top: 25px; margin-bottom: 15px; background: #e6f0ff; padding: 8px 15px; border-radius: 12px;">3. Évolution de la robotique</h2>
+                <div class="frise" style="background: #fff7ed; border: 2px dashed #f97316; border-radius: 16px; padding: 20px; margin: 15px 0; text-align: center; color: #9a3412; font-weight: 500;">
+                    <p>🕰️ <strong>Réaliser une frise chronologique</strong> présentant l'évolution des robots.</p>
+                    <p style="font-size:0.9rem; color:#7c2d12;">(Zone de saisie libre — non notée automatiquement)</p>
+                    <textarea id="robotsFrise" oninput="saveRobotsState(false)" style="width: 100%; min-height: 70px; border-radius: 10px; border: 1px solid #fdba74; padding: 10px; font-family: inherit; font-size: 0.95rem; margin-top: 10px;" placeholder="Ex: 1961 - Unimate, 2000 - Asimo, 2005 - Big Dog, 2012 - Curiosity, 2014 - Pepper..."></textarea>
+                </div>
+
+                <!-- SECTION 4 : IMPACTS -->
+                <h2 style="color: #0f2b4b; font-size: 1.3rem; margin-top: 25px; margin-bottom: 15px; background: #e6f0ff; padding: 8px 15px; border-radius: 12px;">4. Étapes du cycle de vie d'un produit</h2>
+                <p>Rappeler quelles sont les étapes du cycle de vie d'un produit :</p>
+                <div class="word-bank" style="background:#fef9c3; border-radius: 14px; padding: 12px 18px; margin: 15px 0; font-size: 0.9rem; color: #854d0e; display: flex; flex-wrap: wrap; gap: 8px 16px;">
+                    <span style="background: white; padding: 4px 12px; border-radius: 30px; border: 1px solid #fef08a; font-weight: 500;">Extraction des matières premières</span>
+                    <span style="background: white; padding: 4px 12px; border-radius: 30px; border: 1px solid #fef08a; font-weight: 500;">Fabrication</span>
+                    <span style="background: white; padding: 4px 12px; border-radius: 30px; border: 1px solid #fef08a; font-weight: 500;">Transport</span>
+                    <span style="background: white; padding: 4px 12px; border-radius: 30px; border: 1px solid #fef08a; font-weight: 500;">Utilisation</span>
+                    <span style="background: white; padding: 4px 12px; border-radius: 30px; border: 1px solid #fef08a; font-weight: 500;">Fin de vie / Recyclage</span>
+                </div>
+
+                <h2 style="color: #0f2b4b; font-size: 1.3rem; margin-top: 25px; margin-bottom: 15px; background: #e6f0ff; padding: 8px 15px; border-radius: 12px;">5. Pourquoi remplace-t-on un objet ?</h2>
+                <p>Donner au moins deux raisons qui expliquent pourquoi on remplace un objet.</p>
+                <textarea id="raisons" rows="3" oninput="saveRobotsState(false)" style="width:100%; border-radius:12px; border:1.5px solid #cbd5e1; padding:12px; font-size:0.95rem;" placeholder="1. ...&#10;2. ..."></textarea>
+
+                <h2 style="color: #0f2b4b; font-size: 1.3rem; margin-top: 25px; margin-bottom: 15px; background: #e6f0ff; padding: 8px 15px; border-radius: 12px;">6. Réduire les impacts d'un objet technique sur l'environnement</h2>
+                <p>Comment peut-on réduire les impacts d'un objet technique sur l'environnement ?</p>
+                <div class="info-block" style="background: #f8fafc; border-left: 6px solid #3b82f6; padding: 15px 20px; border-radius: 12px; margin: 20px 0; box-shadow: 0 2px 8px rgba(0,0,0,0.03);">
+                    <p><strong>L'éco-conception permet de :</strong></p>
+                    <ul class="definition-list" style="list-style-type: none; padding-left: 0;">
+                        <li style="margin-bottom: 8px; padding-left: 20px; position: relative;">• Choisir des matériaux recyclables ou valorisables</li>
+                        <li style="margin-bottom: 8px; padding-left: 20px; position: relative;">• Augmenter l'efficacité énergétique</li>
+                        <li style="margin-bottom: 8px; padding-left: 20px; position: relative;">• Favoriser les énergies renouvelables</li>
+                        <li style="margin-bottom: 8px; padding-left: 20px; position: relative;">• Réduire les distances de transport et limiter les emballages</li>
+                        <li style="margin-bottom: 8px; padding-left: 20px; position: relative;">• Faciliter le reconditionnement en fin de vie…</li>
+                    </ul>
+                </div>
+
+                <h2 style="color: #0f2b4b; font-size: 1.3rem; margin-top: 25px; margin-bottom: 15px; background: #e6f0ff; padding: 8px 15px; border-radius: 12px;">7. Impacts de l'extraction du lithium</h2>
+                <p>Résumer en quelques lignes l'impact sur l'environnement et sur la société bolivienne de l'extraction du lithium.</p>
+                <textarea id="lithium" rows="4" oninput="saveRobotsState(false)" style="width:100%; border-radius:12px; border:1.5px solid #cbd5e1; padding:12px; font-size:0.95rem;" placeholder="Votre réponse..."></textarea>
+
+                <!-- BOUTON D'ENVOI -->
+                <button class="btn-submit" id="submitRobotsBtn" onclick="sendRobotsToSheet()" style="background: #1e3a5f; color: white; border: none; padding: 16px 30px; font-size: 1.2rem; font-weight: 600; border-radius: 50px; cursor: pointer; transition: background 0.2s, transform 0.1s; display: block; margin: 30px auto 10px; box-shadow: 0 6px 14px rgba(30,58,95,0.3); width: 100%; max-width: 400px;">
+                    📤 Envoyer mes réponses
+                </button>
+                <div id="robotsResultBadge" class="result-badge" style="background: #dcfce7; color: #166534; padding: 12px 20px; border-radius: 40px; font-weight: 700; text-align: center; font-size: 1.1rem; margin: 15px 0; display: none;"></div>
+                <p style="font-size: 0.9rem; color: #475569; background: #f1f5f9; padding: 12px 18px; border-radius: 12px; margin-top: 15px; text-align: center;">
+                    🔗 Les résultats seront envoyés vers le Google Sheet « Les robots » avec votre identité de connexion.
+                </p>
+
+                <div style="text-align: center; margin-top: 20px;">
+                    <button onclick="toggleRobotsSheet()" style="background: #64748B; color: white; border: none; padding: 10px 24px; border-radius: 20px; font-weight: 700; cursor: pointer;">
+                        ✖️ Masquer le document
+                    </button>
+                </div>
             </div>
 
             <!-- ACTIVITÉ 3 -->
@@ -366,6 +1377,8 @@ function openRobotsModule(activity) {
             </div>
         </div>
     `;
+
+    restoreRobotsState();
 
     document.getElementById('activityScreen').style.display = 'block';
     window.scrollTo({ top: 0, behavior: 'smooth' });

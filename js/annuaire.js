@@ -226,6 +226,9 @@ async function handleLogin(event) {
 
             if (expectedPassword && inputPassword.toUpperCase() === expectedPassword.toUpperCase()) {
                 currentStudent = eleve;
+                if (typeof fetchRemoteUnlocks === 'function') {
+                    await fetchRemoteUnlocks();
+                }
                 showDashboard(eleve.niveau);
                 return;
             } else {

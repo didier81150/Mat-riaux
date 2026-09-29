@@ -72,6 +72,29 @@ async function sendDataToGoogleAppsScript(payload, customUrl) {
     }
 }
 
+// Helper global de récupération synchrone/asynchrone des déverrouillages à distance depuis Google Apps Script
+async function fetchRemoteUnlocks() {
+    if (!CONFIG.GOOGLE_APPS_SCRIPT_URL || CONFIG.GOOGLE_APPS_SCRIPT_URL.trim() === '') return null;
+
+    try {
+        const separator = CONFIG.GOOGLE_APPS_SCRIPT_URL.includes('?') ? '&' : '?';
+        const targetUrl = `${CONFIG.GOOGLE_APPS_SCRIPT_URL}${separator}action=getUnlocks&t=${Date.now()}`;
+        const resp = await fetch(targetUrl);
+        if (resp.ok) {
+            const data = await resp.json();
+            if (data && data.unlocks && typeof data.unlocks === 'object') {
+                const localUnlocks = JSON.parse(localStorage.getItem(CONFIG.STORAGE_KEY_UNLOCKS)) || {};
+                const mergedUnlocks = { ...localUnlocks, ...data.unlocks };
+                localStorage.setItem(CONFIG.STORAGE_KEY_UNLOCKS, JSON.stringify(mergedUnlocks));
+                return mergedUnlocks;
+            }
+        }
+    } catch (e) {
+        console.warn("⚠️ Impossible de synchroniser les déverrouillages à distance :", e);
+    }
+    return null;
+}
+
 // Base de données unifiée des activités par niveau
 const ACTIVITIES_DATABASE = [
     // --- Common Activities across levels ---

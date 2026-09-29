@@ -51,7 +51,7 @@ const FICHES_CATEGORIES = [
 
 // Helper global d'envoi de données vers Google Apps Script Web App
 async function sendDataToGoogleAppsScript(payload, customUrl) {
-    const targetUrl = customUrl || CONFIG.SYSTEMES_AUTOMATIQUES_WEB_APP_URL || CONFIG.GOOGLE_APPS_SCRIPT_URL || CONFIG.EVAL_3EME_WEB_APP_URL;
+    const targetUrl = customUrl || CONFIG.GOOGLE_APPS_SCRIPT_URL || CONFIG.SYSTEMES_AUTOMATIQUES_WEB_APP_URL || CONFIG.EVAL_3EME_WEB_APP_URL;
     if (!targetUrl || targetUrl.trim() === '') {
         console.warn("⚠️ Aucune URL Web App Google Apps Script configurée.");
         return false;

@@ -67,7 +67,12 @@ function isActivityUnlocked(activityId) {
     try {
         const localUnlocks = JSON.parse(localStorage.getItem(CONFIG.STORAGE_KEY_UNLOCKS)) || {};
 
-        // 1. Vérifier si un déverrouillage spécifique à la classe de l'élève existe
+        // 1. Si l'activité est déverrouillée au niveau global (_ALL ou code d'activité principal à true)
+        if (localUnlocks[actCode] === true || localUnlocks[act.id] === true || localUnlocks[`${actCode}_ALL`] === true) {
+            return true;
+        }
+
+        // 2. Vérifier si un déverrouillage spécifique à la classe de l'élève existe
         if (typeof currentStudent !== 'undefined' && currentStudent && currentStudent.classe) {
             const classKey = `${actCode}_${currentStudent.classe}`;
             if (localUnlocks[classKey] !== undefined) {
@@ -75,13 +80,13 @@ function isActivityUnlocked(activityId) {
             }
         }
 
-        // 2. Vérifier si un déverrouillage pour "Toutes les classes" (_ALL) existe
+        // 3. Vérifier si un déverrouillage pour "Toutes les classes" (_ALL) existe
         const allKey = `${actCode}_ALL`;
         if (localUnlocks[allKey] !== undefined) {
             return Boolean(localUnlocks[allKey]);
         }
 
-        // 3. Vérifier la clé simple d'activité
+        // 4. Vérifier la clé simple d'activité
         if (localUnlocks[actCode] !== undefined) {
             return Boolean(localUnlocks[actCode]);
         }

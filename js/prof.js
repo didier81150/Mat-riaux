@@ -196,21 +196,44 @@ async function renderUnlockManagement() {
 }
 
 async function toggleActivityUnlockLocal(activityCode, isChecked) {
+    const niveau = document.getElementById('profSuiviNiveau') ? document.getElementById('profSuiviNiveau').value : '4eme';
     const targetClasse = document.getElementById('unlockClasseSelect') ? document.getElementById('unlockClasseSelect').value : 'ALL';
     const localUnlocks = getLocalUnlocks();
     const key = `${activityCode}_${targetClasse}`;
     localUnlocks[key] = isChecked;
 
+    // Déverrouillage principal
+    localUnlocks[activityCode] = isChecked;
+
     if (targetClasse === 'ALL') {
-        localUnlocks[activityCode] = isChecked;
         localUnlocks[`${activityCode}_ALL`] = isChecked;
 
-        // Harmonisation pour toutes les sous-clés de cette activité
+        // Obtenir toutes les classes du niveau
+        let allClasses = [];
+        if (typeof annuaireEleves !== 'undefined' && Array.isArray(annuaireEleves) && annuaireEleves.length > 0) {
+            allClasses = [...new Set(annuaireEleves.filter(e => e.niveau === niveau).map(e => e.classe))];
+        }
+        if (allClasses.length === 0) {
+            const prefix = niveau === '5eme' ? '50' : (niveau === '4eme' ? '40' : '30');
+            for (let i = 1; i <= 8; i++) {
+                allClasses.push(`${prefix}${i}`);
+            }
+        }
+
+        // Harmonisation pour toutes les clés de classe du niveau
+        allClasses.forEach(cls => {
+            localUnlocks[`${activityCode}_${cls}`] = isChecked;
+        });
+
+        // Harmonisation pour toutes les clés existantes
         Object.keys(localUnlocks).forEach(k => {
             if (k.startsWith(`${activityCode}_`)) {
                 localUnlocks[k] = isChecked;
             }
         });
+    } else {
+        // Si une classe spécifique est sélectionnée, on synchronise également la clé de classe
+        localUnlocks[`${activityCode}_${targetClasse}`] = isChecked;
     }
 
     localStorage.setItem(CONFIG.STORAGE_KEY_UNLOCKS, JSON.stringify(localUnlocks));

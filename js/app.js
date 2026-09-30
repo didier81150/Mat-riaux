@@ -6,6 +6,9 @@ let currentActiveLevel = "4eme";
 
 document.addEventListener('DOMContentLoaded', function() {
     loadAnnuaire();
+    if (typeof fetchRemoteUnlocks === 'function') {
+        fetchRemoteUnlocks();
+    }
 });
 
 // Affichage et gestion du Tableau de Bord (Dashboard)
@@ -67,31 +70,25 @@ function isActivityUnlocked(activityId) {
     try {
         const localUnlocks = JSON.parse(localStorage.getItem(CONFIG.STORAGE_KEY_UNLOCKS)) || {};
 
-        // 1. Si l'activité est déverrouillée au niveau global (_ALL ou code d'activité principal à true)
+        // 1. Déverrouillage prioritaire au niveau global / toutes les classes (_ALL ou code d'activité à true)
         if (localUnlocks[actCode] === true || localUnlocks[act.id] === true || localUnlocks[`${actCode}_ALL`] === true) {
             return true;
         }
 
-        // 2. Vérifier si un déverrouillage spécifique à la classe de l'élève existe
+        // 2. Déverrouillage spécifique à la classe de l'élève
         if (typeof currentStudent !== 'undefined' && currentStudent && currentStudent.classe) {
             const classKey = `${actCode}_${currentStudent.classe}`;
-            if (localUnlocks[classKey] !== undefined) {
-                return Boolean(localUnlocks[classKey]);
+            if (localUnlocks[classKey] === true) {
+                return true;
+            }
+            if (localUnlocks[classKey] === false && localUnlocks[`${actCode}_ALL`] !== true && localUnlocks[actCode] !== true) {
+                return false;
             }
         }
 
-        // 3. Vérifier si un déverrouillage pour "Toutes les classes" (_ALL) existe
-        const allKey = `${actCode}_ALL`;
-        if (localUnlocks[allKey] !== undefined) {
-            return Boolean(localUnlocks[allKey]);
-        }
-
-        // 4. Vérifier la clé simple d'activité
-        if (localUnlocks[actCode] !== undefined) {
-            return Boolean(localUnlocks[actCode]);
-        }
-        if (localUnlocks[act.id] !== undefined) {
-            return Boolean(localUnlocks[act.id]);
+        // 3. Vérification des verrous explicites au niveau global
+        if (localUnlocks[`${actCode}_ALL`] === false || localUnlocks[actCode] === false || localUnlocks[act.id] === false) {
+            return false;
         }
     } catch (e) {
         console.warn("Erreur de lecture du stockage des déverrouillages :", e);

@@ -229,6 +229,9 @@ async function handleLogin(event) {
 
             if (expectedPassword && (inputPassword.toUpperCase() === expectedPassword.toUpperCase() || normInput === normExpected)) {
                 currentStudent = eleve;
+                try {
+                    localStorage.setItem("currentStudent", JSON.stringify(currentStudent));
+                } catch(e) {}
                 if (typeof fetchRemoteUnlocks === 'function') {
                     await fetchRemoteUnlocks();
                 }

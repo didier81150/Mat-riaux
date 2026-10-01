@@ -86,6 +86,11 @@ async function fetchRemoteUnlocks() {
                 const localUnlocks = JSON.parse(localStorage.getItem(CONFIG.STORAGE_KEY_UNLOCKS)) || {};
                 const mergedUnlocks = { ...localUnlocks, ...data.unlocks };
 
+                // La décision distante enregistrée sur Google Apps Script fait foi
+                Object.keys(data.unlocks).forEach(key => {
+                    mergedUnlocks[key] = Boolean(data.unlocks[key]);
+                });
+
                 // Conserver le statut vrai si déjà déverrouillé localement
                 Object.keys(localUnlocks).forEach(key => {
                     if (localUnlocks[key] === true) {
@@ -94,6 +99,11 @@ async function fetchRemoteUnlocks() {
                 });
 
                 localStorage.setItem(CONFIG.STORAGE_KEY_UNLOCKS, JSON.stringify(mergedUnlocks));
+
+                if (typeof refreshCurrentDashboard === 'function') {
+                    refreshCurrentDashboard();
+                }
+
                 return mergedUnlocks;
             }
         }

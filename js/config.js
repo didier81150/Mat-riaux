@@ -216,7 +216,7 @@ const ACTIVITIES_DATABASE = [
         youtubeVideo: {
             title: "Propriétés des matériaux en technologie",
             url: "https://www.youtube.com/watch?v=cpNMr0cZlRI&t=8s",
-            embedUrl: "https://www.youtube.com/embed/cpNMr0cZlRI?start=8"
+            embedUrl: "https://www.youtube-nocookie.com/embed/cpNMr0cZlRI?start=8"
         },
         pdfList: [
             { titre: "Document 1 – Propriétés des Matériaux", url: "https://drive.google.com/file/d/18xyaYbOk3_rr_HFoffTTj4g2opWDyzZL/view?usp=sharing" },

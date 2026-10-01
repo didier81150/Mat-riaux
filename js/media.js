@@ -119,32 +119,38 @@ const MBOT_VIDEOS = [
     {
         num: 1,
         titre: "1 - Présentation de mBot, robot programmable",
-        embedUrl: "https://www.youtube.com/embed/EWs8s4jpgag"
+        embedUrl: "https://www.youtube-nocookie.com/embed/EWs8s4jpgag",
+        directUrl: "https://www.youtube.com/watch?v=EWs8s4jpgag"
     },
     {
         num: 2,
         titre: "2 - Constitution de mBot, robot programmable",
-        embedUrl: "https://www.youtube.com/embed/IzBJlIKpPWo?start=42"
+        embedUrl: "https://www.youtube-nocookie.com/embed/IzBJlIKpPWo?start=42",
+        directUrl: "https://www.youtube.com/watch?v=IzBJlIKpPWo&t=42s"
     },
     {
         num: 3,
         titre: "3 - Les actionneurs de mBot, robot programmable",
-        embedUrl: "https://www.youtube.com/embed/t9htG1XMEzA"
+        embedUrl: "https://www.youtube-nocookie.com/embed/t9htG1XMEzA",
+        directUrl: "https://www.youtube.com/watch?v=t9htG1XMEzA"
     },
     {
         num: 4,
         titre: "4 - Les capteurs de mBot, robot programmable",
-        embedUrl: "https://www.youtube.com/embed/lNie493d7oE?start=12"
+        embedUrl: "https://www.youtube-nocookie.com/embed/lNie493d7oE?start=12",
+        directUrl: "https://www.youtube.com/watch?v=lNie493d7oE&t=12s"
     },
     {
         num: 5,
         titre: "5 - Piloter manuellement mBot, robot programmable",
-        embedUrl: "https://www.youtube.com/embed/7V8-Y7hDejk"
+        embedUrl: "https://www.youtube-nocookie.com/embed/7V8-Y7hDejk",
+        directUrl: "https://www.youtube.com/watch?v=7V8-Y7hDejk"
     },
     {
         num: 6,
         titre: "6 - Fonctionnement de mBot, chaîne d'énergie et chaîne d'information",
-        embedUrl: "https://www.youtube.com/embed/BhbyP-C--I0?start=117"
+        embedUrl: "https://www.youtube-nocookie.com/embed/BhbyP-C--I0?start=117",
+        directUrl: "https://www.youtube.com/watch?v=BhbyP-C--I0&t=117s"
     }
 ];
 
@@ -193,9 +199,14 @@ function renderMbotModuleView(container) {
 
             <!-- Lecteur Vidéo Principal -->
             <div style="background: white; border-radius: 16px; padding: 20px; box-shadow: var(--shadow-md); border: 1px solid var(--border);">
-                <h3 style="margin: 0 0 15px 0; color: var(--navy); font-size: 1.2rem; font-weight: 700; display: flex; align-items: center; gap: 8px;">
-                    <span style="background: var(--accent); color: white; padding: 4px 10px; border-radius: 8px; font-size: 0.85rem;">Vidéo en cours</span>
-                    ${escapeHTML(activeVideo.titre)}
+                <h3 style="margin: 0 0 15px 0; color: var(--navy); font-size: 1.2rem; font-weight: 700; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px;">
+                    <span style="display: flex; align-items: center; gap: 8px;">
+                        <span style="background: var(--accent); color: white; padding: 4px 10px; border-radius: 8px; font-size: 0.85rem;">Vidéo en cours</span>
+                        ${escapeHTML(activeVideo.titre)}
+                    </span>
+                    <a href="${escapeHTML(activeVideo.directUrl)}" target="_blank" rel="noopener noreferrer" style="background: #ef4444; color: white; text-decoration: none; padding: 6px 14px; border-radius: 8px; font-size: 0.85rem; font-weight: 600; display: inline-flex; align-items: center; gap: 6px;">
+                        🔗 Lien de secours YouTube
+                    </a>
                 </h3>
                 <div style="position: relative; padding-bottom: 56.25%; height: 0; overflow: hidden; border-radius: 12px; background: #000;">
                     <iframe
@@ -205,6 +216,11 @@ function renderMbotModuleView(container) {
                         allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
                         allowfullscreen
                     ></iframe>
+                </div>
+                <div style="margin-top: 12px; text-align: center;">
+                    <a href="${escapeHTML(activeVideo.directUrl)}" target="_blank" rel="noopener noreferrer" style="color: #2563eb; font-weight: 600; font-size: 0.9rem; text-decoration: underline;">
+                        💡 Si la vidéo affiche une erreur ou ne se charge pas dans le cadre, cliquez ici pour la lire directement sur YouTube.
+                    </a>
                 </div>
             </div>
 

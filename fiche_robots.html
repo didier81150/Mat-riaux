@@ -537,11 +537,22 @@ hulc:       { pays: "États-Unis (2009)",  type: "Exosquelette",  secteur: "Mili
 };
 
 function getStudentInfo() {
-let info = { nom: "", prenom: "", classe: "", email: "", id: "" };
+try {
+const params = new URLSearchParams(window.location.search);
+if (params.get("nom") || params.get("name")) {
+return {
+nom: params.get("nom") || params.get("name") || "",
+prenom: params.get("prenom") || params.get("firstName") || "",
+classe: params.get("classe") || params.get("class") || "",
+email: params.get("email") || "",
+id: params.get("id") || ""
+};
+}
+} catch(e) {}
 try {
 if (window.opener && window.opener.currentStudent) {
 const p = window.opener.currentStudent;
-if (p) return { nom: p.nom || "", prenom: p.prenom || "", classe: p.classe || "", email: p.email || "", id: p.id || "" };
+if (p && p.nom) return { nom: p.nom || "", prenom: p.prenom || "", classe: p.classe || "", email: p.email || "", id: p.id || "" };
 }
 } catch(e) {}
 try {
@@ -554,18 +565,6 @@ prenom: parsed.prenom || parsed.firstName || "",
 classe: parsed.classe || parsed.class || parsed.grade || "",
 email: parsed.email || "",
 id: parsed.id || parsed.userId || ""
-};
-}
-} catch(e) {}
-try {
-const params = new URLSearchParams(window.location.search);
-if (params.has("nom") || params.has("name")) {
-return {
-nom: params.get("nom") || params.get("name") || "",
-prenom: params.get("prenom") || params.get("firstName") || "",
-classe: params.get("classe") || params.get("class") || "",
-email: params.get("email") || "",
-id: params.get("id") || ""
 };
 }
 } catch(e) {}
@@ -647,19 +646,52 @@ else if (sel.value !== "") sel.classList.add("wrong-highlight");
 });
 }
 
+function getStudentStorageKey(student) {
+    const nom = (student.nom || "inconnu").trim().toLowerCase();
+    const prenom = (student.prenom || "").trim().toLowerCase();
+    const classe = (student.classe || "").trim().toLowerCase();
+    return `fiche_robots_submitted_${nom}_${prenom}_${classe}`;
+}
+
+function checkSubmissionStatus(student) {
+    const key = getStudentStorageKey(student);
+    const existing = localStorage.getItem(key);
+    if (existing) {
+        try {
+            const data = JSON.parse(existing);
+            const submitBtn = document.getElementById("submitBtn");
+            if (submitBtn) {
+                submitBtn.disabled = true;
+                submitBtn.style.opacity = "0.6";
+                submitBtn.style.cursor = "not-allowed";
+                submitBtn.textContent = "🔒 Réponses déjà envoyées (1 seul essai autorisé)";
+            }
+            const badge = document.getElementById("resultBadge");
+            if (badge) {
+                badge.textContent = `🔒 Réponses déjà transmises le ${data.date || ''} (Note retenue : ${data.score20 || 'N/A'})`;
+                badge.classList.add("show");
+            }
+            return true;
+        } catch(e) {}
+    }
+    return false;
+}
+
 async function sendToSheet() {
 const student = getStudentInfo();
 if (!student.nom || student.nom === "Inconnu") {
 const proceed = confirm("⚠️ Impossible de récupérer votre identité automatiquement.\n\nVoulez-vous continuer l'envoi sans identification ?");
 if (!proceed) return;
 }
+
+if (checkSubmissionStatus(student)) {
+alert("⚠️ Vous avez déjà envoyé vos réponses pour ce questionnaire. Un seul essai est autorisé.");
+return;
+}
+
 const score = computeScore();
 const score20 = Math.round((score / TOTAL_QUESTIONS) * 20 * 10) / 10;
 const score20Str = `${score20}/20`;
-
-const badge = document.getElementById("resultBadge");
-badge.textContent = `✅ Score : ${score} / ${TOTAL_QUESTIONS} (Note : ${score20Str})`;
-badge.classList.add("show");
 
 const details = { definition: {}, tableau: {}, reponses_libres: {
 frise: document.querySelector('.frise textarea')?.value || "",
@@ -705,10 +737,22 @@ try {
 await fetch(SCRIPT_URL, {
 method: "POST",
 mode: "no-cors",
-headers: { "Content-Type": "application/json" },
+headers: { "Content-Type": "text/plain;charset=utf-8" },
 body: JSON.stringify(payload)
 });
-alert("✅ Résultats envoyés ! Score : " + score + "/" + TOTAL_QUESTIONS + " (" + score20Str + ")");
+
+// Verrouiller la soumission en local pour garantir un seul essai
+const key = getStudentStorageKey(student);
+localStorage.setItem(key, JSON.stringify({
+score: `${score}/${TOTAL_QUESTIONS}`,
+score20: score20Str,
+date: new Date().toLocaleDateString('fr-FR'),
+timestamp: new Date().toISOString()
+}));
+
+checkSubmissionStatus(student);
+
+alert("✅ Résultats envoyés avec succès ! Score : " + score + "/" + TOTAL_QUESTIONS + " (" + score20Str + ")");
 } catch (error) {
 console.error("Erreur d'envoi :", error);
 alert("❌ Erreur lors de l'envoi.\nScore local : " + score + "/" + TOTAL_QUESTIONS + " (" + score20Str + ")");
@@ -721,6 +765,8 @@ const nameEl = document.getElementById("userName");
 const classEl = document.getElementById("userClass");
 if (nameEl) nameEl.textContent = (student.prenom ? student.prenom + " " : "") + (student.nom || "Élève non identifié");
 if (classEl) classEl.textContent = student.classe ? "Classe : " + student.classe : "";
+
+checkSubmissionStatus(student);
 
 document.querySelectorAll('select').forEach(sel => {
 sel.addEventListener("change", () => {

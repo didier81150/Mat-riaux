@@ -2,6 +2,18 @@
 // VISIONNEUSES DE MÉDIAS (PDF ET VIDÉO UNIFIÉES)
 // =====================================================
 
+function openFicheRobots(e) {
+    if (e) e.preventDefault();
+    let url = 'fiche_robots.html';
+    if (window.currentStudent) {
+        const nom = encodeURIComponent(window.currentStudent.nom || '');
+        const prenom = encodeURIComponent(window.currentStudent.prenom || '');
+        const classe = encodeURIComponent(window.currentStudent.classe || '');
+        url += `?nom=${nom}&prenom=${prenom}&classe=${classe}`;
+    }
+    window.open(url, '_blank');
+}
+
 function openPdfViewer(activity) {
     document.getElementById('dashboardScreen').style.display = 'none';
     const container = document.getElementById('activityContent');
@@ -289,7 +301,7 @@ function openRobotsModule(activity) {
                     <span style="background: var(--primary, #0F172A); color: white; width: 32px; height: 32px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; font-size: 1rem; font-weight: 800; flex-shrink: 0;">2</span>
                     La robotique hier et aujourd'hui
                 </h2>
-                <p style="margin: 10px 0;">✏️ Complète la <a href="fiche_robots.html" target="_blank" rel="noopener noreferrer" style="color: #2563EB; font-weight: 700; text-decoration: underline;">fiche</a> suivante fur et à mesure de ta progression.</p>
+                <p style="margin: 10px 0;">✏️ Complète la <a href="#" onclick="openFicheRobots(event)" style="color: #2563EB; font-weight: 700; text-decoration: underline;">fiche élève interactive</a> au fur et à mesure de ta progression.</p>
             </div>
 
             <!-- ACTIVITÉ 3 -->

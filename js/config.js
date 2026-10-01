@@ -86,6 +86,11 @@ async function fetchRemoteUnlocks() {
                 const localUnlocks = JSON.parse(localStorage.getItem(CONFIG.STORAGE_KEY_UNLOCKS)) || {};
                 const mergedUnlocks = { ...localUnlocks, ...data.unlocks };
 
+                // La décision distante enregistrée sur Google Apps Script fait foi
+                Object.keys(data.unlocks).forEach(key => {
+                    mergedUnlocks[key] = Boolean(data.unlocks[key]);
+                });
+
                 // Conserver le statut vrai si déjà déverrouillé localement
                 Object.keys(localUnlocks).forEach(key => {
                     if (localUnlocks[key] === true) {
@@ -94,6 +99,11 @@ async function fetchRemoteUnlocks() {
                 });
 
                 localStorage.setItem(CONFIG.STORAGE_KEY_UNLOCKS, JSON.stringify(mergedUnlocks));
+
+                if (typeof refreshCurrentDashboard === 'function') {
+                    refreshCurrentDashboard();
+                }
+
                 return mergedUnlocks;
             }
         }
@@ -216,7 +226,7 @@ const ACTIVITIES_DATABASE = [
         youtubeVideo: {
             title: "Propriétés des matériaux en technologie",
             url: "https://www.youtube.com/watch?v=cpNMr0cZlRI&t=8s",
-            embedUrl: "https://www.youtube.com/embed/cpNMr0cZlRI?start=8"
+            embedUrl: "https://www.youtube-nocookie.com/embed/cpNMr0cZlRI?start=8"
         },
         pdfList: [
             { titre: "Document 1 – Propriétés des Matériaux", url: "https://drive.google.com/file/d/18xyaYbOk3_rr_HFoffTTj4g2opWDyzZL/view?usp=sharing" },

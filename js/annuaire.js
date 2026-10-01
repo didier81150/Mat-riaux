@@ -224,7 +224,10 @@ async function handleLogin(event) {
             const expectedPassword = (eleve.motDePasse || '').trim();
             const inputPassword = codeSecret.trim();
 
-            if (expectedPassword && inputPassword.toUpperCase() === expectedPassword.toUpperCase()) {
+            const normInput = inputPassword.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toUpperCase();
+            const normExpected = expectedPassword.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toUpperCase();
+
+            if (expectedPassword && (inputPassword.toUpperCase() === expectedPassword.toUpperCase() || normInput === normExpected)) {
                 currentStudent = eleve;
                 if (typeof fetchRemoteUnlocks === 'function') {
                     await fetchRemoteUnlocks();

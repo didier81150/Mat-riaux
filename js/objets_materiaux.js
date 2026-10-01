@@ -487,16 +487,23 @@ async function finishOmQuiz() {
         nom: currentStudent ? currentStudent.nom : '',
         prenom: currentStudent ? currentStudent.prenom : '',
         classe: currentStudent ? currentStudent.classe : '',
+        Nom: currentStudent ? currentStudent.nom : '',
+        Prenom: currentStudent ? currentStudent.prenom : '',
+        Classe: currentStudent ? currentStudent.classe : '',
+        niveau: currentStudent ? currentStudent.niveau : '4eme',
         "type d'objet": progress.sub1_pct !== null ? progress.sub1_pct : "",
         "note objet et materiaux 1": progress.sub2_pct !== null ? progress.sub2_pct : "",
         "note objet et materiaux 2": progress.sub3_pct !== null ? progress.sub3_pct : "",
         "note totale": progress.note_totale !== null ? progress.note_totale : "",
-        // Standard keys fallback
+        // Alias de clés standards pour compatibilité avec tous les scripts Apps Script
         typeObjet: progress.sub1_pct !== null ? progress.sub1_pct : "",
         noteMateriaux1: progress.sub2_pct !== null ? progress.sub2_pct : "",
         noteMateriaux2: progress.sub3_pct !== null ? progress.sub3_pct : "",
         noteTotale: progress.note_totale !== null ? progress.note_totale : "",
-        date: new Date().toLocaleDateString('fr-FR')
+        note: progress.note_totale !== null ? progress.note_totale : "",
+        score: progress.note_totale !== null ? progress.note_totale : "",
+        date: new Date().toLocaleDateString('fr-FR'),
+        Date: new Date().toLocaleDateString('fr-FR')
     };
 
     let gasSuccess = false;

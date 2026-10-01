@@ -588,8 +588,9 @@ return score;
 
 function updateLiveScore() {
 const score = computeScore();
+const score20 = Math.round((score / TOTAL_QUESTIONS) * 20 * 10) / 10;
 const display = document.getElementById("scoreDisplay");
-display.textContent = score + " / " + TOTAL_QUESTIONS;
+display.textContent = `${score} / ${TOTAL_QUESTIONS} (${score20}/20)`;
 const pct = (score / TOTAL_QUESTIONS) * 100;
 display.classList.remove("good", "mid", "bad");
 if (pct >= 80) display.classList.add("good");
@@ -653,8 +654,11 @@ const proceed = confirm("⚠️ Impossible de récupérer votre identité automa
 if (!proceed) return;
 }
 const score = computeScore();
+const score20 = Math.round((score / TOTAL_QUESTIONS) * 20 * 10) / 10;
+const score20Str = `${score20}/20`;
+
 const badge = document.getElementById("resultBadge");
-badge.textContent = `✅ Score : ${score} / ${TOTAL_QUESTIONS}`;
+badge.textContent = `✅ Score : ${score} / ${TOTAL_QUESTIONS} (Note : ${score20Str})`;
 badge.classList.add("show");
 
 const details = { definition: {}, tableau: {}, reponses_libres: {
@@ -677,20 +681,23 @@ const payload = {
 type: "MODULE_ROBOTS",
 nom: student.nom,
 prenom: student.prenom,
+"prénom": student.prenom,
 classe: student.classe,
 Nom: student.nom,
 Prenom: student.prenom,
 Classe: student.classe,
 email: student.email,
 id_eleve: student.id,
-score: score + " / " + TOTAL_QUESTIONS,
-note: score + " / " + TOTAL_QUESTIONS,
-scoreNum: score,
-total: TOTAL_QUESTIONS,
-details: JSON.stringify(details),
-timestamp: new Date().toISOString(),
+score: `${score}/${TOTAL_QUESTIONS}`,
+score45: `${score}/${TOTAL_QUESTIONS}`,
+score20: score20Str,
+"résultat /20": score20Str,
+"resultat /20": score20Str,
+note: score20Str,
 date: new Date().toLocaleDateString('fr-FR'),
 Date: new Date().toLocaleDateString('fr-FR'),
+timestamp: new Date().toISOString(),
+details: JSON.stringify(details),
 page: "Vous avez dit robot"
 };
 
@@ -701,10 +708,10 @@ mode: "no-cors",
 headers: { "Content-Type": "application/json" },
 body: JSON.stringify(payload)
 });
-alert("✅ Résultats envoyés ! Score : " + score + "/" + TOTAL_QUESTIONS);
+alert("✅ Résultats envoyés ! Score : " + score + "/" + TOTAL_QUESTIONS + " (" + score20Str + ")");
 } catch (error) {
 console.error("Erreur d'envoi :", error);
-alert("❌ Erreur lors de l'envoi.\nScore local : " + score + "/" + TOTAL_QUESTIONS);
+alert("❌ Erreur lors de l'envoi.\nScore local : " + score + "/" + TOTAL_QUESTIONS + " (" + score20Str + ")");
 }
 }
 

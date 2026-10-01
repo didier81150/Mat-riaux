@@ -513,9 +513,12 @@ mais aussi dans les domaines militaire, médical, les services, les loisirs, à 
 <p class="note">🔗 Les résultats seront envoyés vers le Google Sheet « Les robots » avec votre identité de connexion.</p>
 </div>
 
+<script src="js/config.js"></script>
 <script>
 (function() {
-const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwt3dIUiVkeqc-pOHN5SHav6hwpRRO6KPK4cXTlEwdQUx490FElAB7YIZx66GGbqJBlSg/exec";
+const SCRIPT_URL = (typeof CONFIG !== 'undefined' && (CONFIG.ROBOTS_WEB_APP_URL || CONFIG.GOOGLE_APPS_SCRIPT_URL))
+    ? (CONFIG.ROBOTS_WEB_APP_URL || CONFIG.GOOGLE_APPS_SCRIPT_URL)
+    : "https://script.google.com/macros/s/AKfycbzTGvs1knYuA7TO_dcraclbDEQ3G4Zb9yuK47pxwVtv8AG-o77wK2ZUtReNJGQI5Bo3/exec";
 const TOTAL_QUESTIONS = 45;
 
 const fillAnswers = {

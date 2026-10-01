@@ -254,12 +254,6 @@ function openRobotsModule(activity) {
                 <p style="margin: 0; opacity: 0.9; font-size: 1.05rem;">Découverte, histoire, impact sociétal et environnemental</p>
             </div>
 
-            <!-- Bannières Ressource et Fiche Élève -->
-            <div style="display: flex; gap: 15px; justify-content: center; flex-wrap: wrap; margin-bottom: 30px;">
-                <a href="${escapeHTML(pdfUrl)}" target="_blank" rel="noopener noreferrer" style="background: var(--accent, #F97316); color: white; text-decoration: none; padding: 12px 24px; border-radius: 10px; font-weight: 700; font-size: 0.95rem; display: inline-flex; align-items: center; gap: 8px; box-shadow: var(--shadow-sm); transition: transform 0.2s, opacity 0.2s;">
-                    📄 Télécharger la Fiche Élève (PDF)
-                </a>
-            </div>
 
             <!-- Introduction -->
             <div style="background: white; border-left: 5px solid var(--accent, #F97316); padding: 20px 24px; margin-bottom: 30px; border-radius: 12px; box-shadow: var(--shadow-sm); border: 1px solid var(--border);">
@@ -295,7 +289,7 @@ function openRobotsModule(activity) {
                     <span style="background: var(--primary, #0F172A); color: white; width: 32px; height: 32px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; font-size: 1rem; font-weight: 800; flex-shrink: 0;">2</span>
                     La robotique hier et aujourd'hui
                 </h2>
-                <p style="margin: 10px 0;">✏️ Complète <a href="https://learningapps.org/watch?v=phyrdcknn20" target="_blank" rel="noopener noreferrer" style="color: #2563EB; font-weight: 700; text-decoration: underline;">ce texte à trous en ligne</a>, puis recopie-le une fois corrigé (page 1 de la fiche élève).</p>
+                <p style="margin: 10px 0;">✏️ Complète la <a href="fiche_robots.html" target="_blank" rel="noopener noreferrer" style="color: #2563EB; font-weight: 700; text-decoration: underline;">fiche</a> suivante fur et à mesure de ta progression.</p>
             </div>
 
             <!-- ACTIVITÉ 3 -->

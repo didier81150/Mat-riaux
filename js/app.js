@@ -87,6 +87,7 @@ function isActivityUnlocked(activityId) {
         }
 
         // 2. Déverrouillage au niveau de l'activité globale ou de toutes les classes (_ALL)
+        if (localUnlocks['ALL_ACTIVITIES'] === true) return true;
         if (localUnlocks[`${actCode}_ALL`] === true || localUnlocks[`${actId}_ALL`] === true) return true;
         if (localUnlocks[actCode] === true || localUnlocks[actId] === true) return true;
 

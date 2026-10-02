@@ -263,18 +263,30 @@ async function toggleActivityUnlockLocal(activityCode, isChecked) {
         refreshCurrentDashboard();
     }
 
-    // Synchronisation vers Google Apps Script
-    if (CONFIG.GOOGLE_APPS_SCRIPT_URL && CONFIG.GOOGLE_APPS_SCRIPT_URL.trim() !== '') {
-        const payload = {
-            type: 'UNLOCK_UPDATE',
-            action: 'setUnlock',
-            activityCode: activityCode,
-            targetClasse: targetClasse,
-            isUnlocked: isChecked,
-            key: key,
-            unlocks: localUnlocks
-        };
-        await sendDataToGoogleAppsScript(payload, CONFIG.GOOGLE_APPS_SCRIPT_URL);
+    // Synchronisation vers tous les endpoints Google Apps Script configurés
+    const endpoints = [
+        CONFIG.GOOGLE_APPS_SCRIPT_URL,
+        CONFIG.ROBOTS_WEB_APP_URL,
+        CONFIG.SYSTEMES_AUTOMATIQUES_WEB_APP_URL,
+        CONFIG.EVAL_3EME_WEB_APP_URL
+    ].filter(url => url && typeof url === 'string' && url.trim() !== '' && url.includes('script.google.com'));
+
+    const uniqueEndpoints = [...new Set(endpoints)];
+
+    const payload = {
+        type: 'UNLOCK_UPDATE',
+        action: 'setUnlock',
+        activityCode: activityCode,
+        targetClasse: targetClasse,
+        isUnlocked: isChecked,
+        key: key,
+        unlocks: localUnlocks
+    };
+
+    for (const targetUrl of uniqueEndpoints) {
+        try {
+            await sendDataToGoogleAppsScript(payload, targetUrl);
+        } catch(e) {}
     }
 }
 

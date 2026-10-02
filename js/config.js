@@ -75,36 +75,72 @@ async function sendDataToGoogleAppsScript(payload, customUrl) {
 
 // Helper global de récupération synchrone/asynchrone des déverrouillages à distance depuis Google Apps Script
 async function fetchRemoteUnlocks() {
-    if (!CONFIG.GOOGLE_APPS_SCRIPT_URL || CONFIG.GOOGLE_APPS_SCRIPT_URL.trim() === '') return null;
+    const localUnlocks = JSON.parse(localStorage.getItem(CONFIG.STORAGE_KEY_UNLOCKS)) || {};
 
+    // 1. Prise en charge des déverrouillages directs via paramètres URL (ex: ?unlock=all ou ?unlock=4_mbot)
     try {
-        const separator = CONFIG.GOOGLE_APPS_SCRIPT_URL.includes('?') ? '&' : '?';
-        const targetUrl = `${CONFIG.GOOGLE_APPS_SCRIPT_URL}${separator}action=getUnlocks&t=${Date.now()}`;
-        const resp = await fetch(targetUrl);
-        if (resp.ok) {
-            const data = await resp.json();
-            if (data && data.unlocks && typeof data.unlocks === 'object') {
-                const localUnlocks = JSON.parse(localStorage.getItem(CONFIG.STORAGE_KEY_UNLOCKS)) || {};
-                const mergedUnlocks = { ...localUnlocks, ...data.unlocks };
-
-                // La décision distante enregistrée sur Google Apps Script fait foi
-                Object.keys(data.unlocks).forEach(key => {
-                    mergedUnlocks[key] = Boolean(data.unlocks[key]);
+        const urlParams = new URLSearchParams(window.location.search);
+        const unlockParam = urlParams.get('unlock') || urlParams.get('deverrouille') || urlParams.get('deverrouiller');
+        if (unlockParam) {
+            const val = unlockParam.toLowerCase().trim();
+            if (val === 'all' || val === 'tout' || val === 'true' || val === '1') {
+                localUnlocks['ALL_ACTIVITIES'] = true;
+                ACTIVITIES_DATABASE.forEach(act => {
+                    const code = act.code || act.id;
+                    localUnlocks[code] = true;
+                    localUnlocks[`${code}_ALL`] = true;
                 });
-
-                localStorage.setItem(CONFIG.STORAGE_KEY_UNLOCKS, JSON.stringify(mergedUnlocks));
-
-                if (typeof refreshCurrentDashboard === 'function') {
-                    refreshCurrentDashboard();
-                }
-
-                return mergedUnlocks;
+            } else {
+                localUnlocks[val] = true;
+                localUnlocks[`${val}_ALL`] = true;
             }
+            localStorage.setItem(CONFIG.STORAGE_KEY_UNLOCKS, JSON.stringify(localUnlocks));
         }
-    } catch (e) {
-        console.warn("⚠️ Impossible de synchroniser les déverrouillages à distance :", e);
+    } catch (e) {}
+
+    // 2. Liste des endpoints Web App Google Apps Script à interroger par ordre de priorité
+    const endpoints = [
+        CONFIG.GOOGLE_APPS_SCRIPT_URL,
+        CONFIG.ROBOTS_WEB_APP_URL,
+        CONFIG.SYSTEMES_AUTOMATIQUES_WEB_APP_URL,
+        CONFIG.EVAL_3EME_WEB_APP_URL
+    ].filter(url => url && typeof url === 'string' && url.trim() !== '' && url.includes('script.google.com'));
+
+    // Élimination des doublons d'URL
+    const uniqueEndpoints = [...new Set(endpoints)];
+
+    for (const url of uniqueEndpoints) {
+        try {
+            const separator = url.includes('?') ? '&' : '?';
+            const targetUrl = `${url}${separator}action=getUnlocks&t=${Date.now()}`;
+            const resp = await fetch(targetUrl);
+            if (resp.ok) {
+                const data = await resp.json();
+                if (data && data.unlocks && typeof data.unlocks === 'object') {
+                    const mergedUnlocks = { ...localUnlocks, ...data.unlocks };
+
+                    Object.keys(data.unlocks).forEach(key => {
+                        mergedUnlocks[key] = Boolean(data.unlocks[key]);
+                    });
+
+                    localStorage.setItem(CONFIG.STORAGE_KEY_UNLOCKS, JSON.stringify(mergedUnlocks));
+
+                    if (typeof refreshCurrentDashboard === 'function') {
+                        refreshCurrentDashboard();
+                    }
+
+                    return mergedUnlocks;
+                }
+            }
+        } catch (e) {
+            console.warn(`⚠️ Synchronisation échouée sur l'endpoint ${url}:`, e);
+        }
     }
-    return null;
+
+    if (typeof refreshCurrentDashboard === 'function') {
+        refreshCurrentDashboard();
+    }
+    return localUnlocks;
 }
 
 // Base de données unifiée des activités par niveau

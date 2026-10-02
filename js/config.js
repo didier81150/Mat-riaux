@@ -92,13 +92,6 @@ async function fetchRemoteUnlocks() {
                     mergedUnlocks[key] = Boolean(data.unlocks[key]);
                 });
 
-                // Conserver le statut vrai si déjà déverrouillé localement
-                Object.keys(localUnlocks).forEach(key => {
-                    if (localUnlocks[key] === true) {
-                        mergedUnlocks[key] = true;
-                    }
-                });
-
                 localStorage.setItem(CONFIG.STORAGE_KEY_UNLOCKS, JSON.stringify(mergedUnlocks));
 
                 if (typeof refreshCurrentDashboard === 'function') {

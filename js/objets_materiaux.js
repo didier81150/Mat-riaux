@@ -508,7 +508,7 @@ async function finishOmQuiz() {
 
     let gasSuccess = false;
     if (typeof sendDataToGoogleAppsScript === 'function') {
-        gasSuccess = await sendDataToGoogleAppsScript(payload);
+        gasSuccess = await sendDataToGoogleAppsScript(payload, CONFIG.OBJET_MATERIAUX_WEB_APP_URL);
     }
 
     if (saveStatus) {

@@ -326,7 +326,7 @@ function doPost(e) {
    - **Exécuter en tant que** : *Moi*
    - **Qui a accès** : *Tout le monde (Anyone)*
 7. Cliquez sur **Déployer** et autorisez l'accès.
-8. Copiez l'URL Web App générée (ex: `https://script.google.com/macros/s/.../exec`) et collez-la dans `CONFIG.GOOGLE_APPS_SCRIPT_URL` du fichier `js/config.js`.
+8. Copiez l'URL Web App générée (ex: `https://script.google.com/macros/s/.../exec`) et collez-la dans `CONFIG.OBJET_MATERIAUX_WEB_APP_URL` du fichier `js/config.js`.
 
 ---
 
@@ -417,10 +417,27 @@ const CONFIG = {
 
     // 3. URL du Web App Google Apps Script
     GOOGLE_APPS_SCRIPT_URL: "https://script.google.com/macros/s/.../exec",
+    OBJET_MATERIAUX_WEB_APP_URL: "https://script.google.com/macros/s/.../exec",
 
     // 4. URL du CSV Consultation des Notes de Stage
     GOOGLE_SHEET_STAGE_NOTES_CSV: "https://docs.google.com/spreadsheets/d/e/.../pub?output=csv",
 };
 ```
+
+---
+
+## Étape 5 : Procédure de Récupération des Notes Élèves Sauvegardées en Local
+
+Si un élève a réalisé un sous-module ou une évaluation alors que l'URL Web App du Google Apps Script n'était pas encore configurée ou en cas de coupure réseau, les résultats sont **automatiquement conservés dans le stockage local (`localStorage`) de son navigateur**.
+
+### Comment récupérer la note d'un élève sur son poste :
+
+1. Sur le poste de l'élève concerné, ouvrez le navigateur et allez sur le site.
+2. Ouvrez la **Console de développement** (Touche `F12` ou `Ctrl + Maj + I`, puis onglet **Console**).
+3. Tapez la commande suivante puis appuyez sur `Entrée` :
+   ```javascript
+   Object.keys(localStorage).filter(k => k.startsWith('om_progress')).forEach(k => console.log(k, JSON.parse(localStorage.getItem(k))));
+   ```
+4. La console affichera les scores enregistrés pour chaque étape : `sub1_pct` (Type d'objet), `sub2_pct` (Objet & Matériaux 1), `sub3_pct` (Objet & Matériaux 2) ainsi que la `note_totale` sur 20.
 
 Votre site est désormais 100% autonome et fonctionnera sans aucune interruption !
